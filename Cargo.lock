@@ -1151,18 +1151,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
-name = "lemmy-gtk"
-version = "0.1.0"
-dependencies = [
- "lemmy_api_common",
- "relm4",
- "relm4-components",
- "reqwest",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "lemmy_api_common"
 version = "0.17.2"
 source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.17.2#a24a4b3ddc7ac5af241d435a39abd9aac82591e0"
@@ -1232,6 +1220,18 @@ source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.17.2#a24a4b3ddc7ac5af2
 dependencies = [
  "lemmy_db_schema",
  "serde",
+]
+
+[[package]]
+name = "lemoa"
+version = "0.1.0"
+dependencies = [
+ "lemmy_api_common",
+ "relm4",
+ "relm4-components",
+ "reqwest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
