@@ -7,7 +7,7 @@ use api::{user::default_person, community::default_community, post::default_post
 use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}};
 use gtk::prelude::*;
 use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::newtypes::PostId, post::GetPostResponse, community::GetCommunityResponse};
-use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css};
+use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
 
 static APP_ID: &str = "com.lemmy-gtk.lemoa";
 
@@ -54,22 +54,16 @@ impl SimpleComponent for App {
     type Output = ();
 
     view! {
-        gtk::Window {
+        #[root]
+        main_window = gtk::ApplicationWindow {
             set_title: Some("Lemoa"),
             set_default_size: (300, 100),
 
             #[wrap(Some)]
             set_titlebar = &gtk::HeaderBar {
-                pack_end =  match model.state {
-                    AppState::ChooseInstance => {
-                        &gtk::Box {}
-                    }
-                    _ => {
-                        &gtk::Button {
-                            set_label: "Reset",
-                            connect_clicked => AppMsg::ChooseInstance,
-                        }
-                    }
+                pack_end =  &gtk::MenuButton {
+                    set_icon_name: "view-more",
+                    set_menu_model: Some(&menu_model),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Posts",
@@ -187,6 +181,12 @@ impl SimpleComponent for App {
         }
     }
 
+    menu! {
+        menu_model: {
+            "Choose Instance" => ChangeInstanceAction
+        }
+    }
+
     // Initialize the component.
     fn init(
         _init: Self::Init,
@@ -196,6 +196,7 @@ impl SimpleComponent for App {
         let instance_url = settings::get_prefs().instance_url;
         let state = if instance_url.is_empty() { AppState::ChooseInstance } else { AppState::Loading };
 
+        // initialize all controllers and factories
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let communities = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let profile_page = ProfilePage::builder().launch(default_person()).forward(sender.input_sender(), |msg| msg);
@@ -204,8 +205,10 @@ impl SimpleComponent for App {
         
         let model = App { state, posts, communities, profile_page, community_page, post_page };
 
+        // fetch posts if that's the initial page
         if !instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts) };
 
+        // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
         let communities_box = model.communities.widget();
         let profile_page = model.profile_page.widget();
@@ -213,6 +216,16 @@ impl SimpleComponent for App {
         let post_page = model.post_page.widget();
         
         let widgets = view_output!();
+
+        // create the menu and its actions
+        let instance_action: RelmAction<ChangeInstanceAction> = RelmAction::new_stateless(move |_| {
+            sender.input(AppMsg::ChooseInstance);
+        });
+
+        let mut group = RelmActionGroup::<WindowActionGroup>::new();
+        group.add_action(instance_action);
+        group.register_for_widget(&widgets.main_window);
+
         ComponentParts { model, widgets }
     }
 
@@ -303,6 +316,9 @@ impl SimpleComponent for App {
         }
     }
 }
+
+relm4::new_action_group!(WindowActionGroup, "win");
+relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance");
 
 fn main() {
     let app = RelmApp::new(APP_ID);
