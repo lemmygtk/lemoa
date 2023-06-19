@@ -10,9 +10,9 @@ Working:
 * Viewing profiles
 * Viewing trending communities
 * Searching communities
+* Logging in with an account
 
-Not yet working:
-* Logging in
+Not yet working, but planned to be added soon:
 * Writing posts or comments
 * Insteracting with posts or comments
 * Private messages
