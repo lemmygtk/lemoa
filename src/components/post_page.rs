@@ -3,7 +3,7 @@ use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::{get_web_image_msg, get_web_image_url}};
+use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}};
 
 use super::comment_row::CommentRow;
 
@@ -50,8 +50,9 @@ impl SimpleComponent for PostPage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.clone().post_view.post.body.unwrap_or("".to_string()),
+                    set_markup: &markdown_to_pango_markup(model.info.post_view.post.body.clone().unwrap_or("".to_string())),
                     set_margin_top: 10,
+                    set_use_markup: true,
                 },
 
                 gtk::Box {

@@ -4,6 +4,7 @@ use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_url;
+use crate::util::markdown_to_pango_markup;
 
 #[derive(Debug)]
 pub struct CommentRow {
@@ -56,8 +57,9 @@ impl FactoryComponent for CommentRow {
             },
             
             gtk::Label {
-               set_label: &self.comment.comment.content,
+               set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
                set_halign: gtk::Align::Start,
+               set_use_markup: true,
             },
 
             gtk::Label {

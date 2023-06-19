@@ -12,3 +12,7 @@ pub fn get_web_image_url(url: Option<DbUrl>) -> String {
         url.to_string()
     } else { String::from("") }
 }
+
+pub fn markdown_to_pango_markup(text: String) -> String {
+    return html2pango::markup_html(&markdown::to_html(&text)).unwrap_or(text)
+}

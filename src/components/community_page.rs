@@ -1,3 +1,4 @@
+use crate::util::markdown_to_pango_markup;
 use lemmy_api_common::{community::GetCommunityResponse, lemmy_db_views::structs::PostView};
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
@@ -47,7 +48,8 @@ impl SimpleComponent for CommunityPage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.clone().community_view.community.description.unwrap_or("".to_string()),
+                    set_markup: &markdown_to_pango_markup(model.info.clone().community_view.community.description.unwrap_or("".to_string())),
+                    set_use_markup: true,
                 },
                 gtk::Label {
                     #[watch]

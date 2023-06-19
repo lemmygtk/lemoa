@@ -4,6 +4,7 @@ use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_msg;
+use crate::util::markdown_to_pango_markup;
 
 use super::post_row::PostRow;
 
@@ -44,7 +45,8 @@ impl SimpleComponent for ProfilePage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.person_view.person.bio.clone().unwrap_or("".to_string()),
+                    set_markup: &markdown_to_pango_markup(model.info.person_view.person.bio.clone().unwrap_or("".to_string())),
+                    set_use_markup: true,
                 },
 
                 gtk::Box {
