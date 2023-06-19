@@ -2,14 +2,13 @@ use lemmy_api_common::person::GetPersonDetailsResponse;
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
-use std::cell::RefCell;
 
 use crate::util::get_web_image_msg;
 
 use super::post_row::PostRow;
 
 pub struct ProfilePage {
-    info: RefCell<GetPersonDetailsResponse>,
+    info: GetPersonDetailsResponse,
     avatar: Controller<WebImage>,
     posts: FactoryVecDeque<PostRow>
 }
@@ -40,12 +39,12 @@ impl SimpleComponent for ProfilePage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().person_view.person.name,
+                    set_text: &model.info.person_view.person.name,
                     add_css_class: "font-very-bold",
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().clone().person_view.person.bio.unwrap_or("".to_string()),
+                    set_text: &model.info.person_view.person.bio.clone().unwrap_or("".to_string()),
                 },
 
                 gtk::Box {
@@ -57,11 +56,11 @@ impl SimpleComponent for ProfilePage {
 
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} posts, ", model.info.borrow().person_view.counts.post_count),
+                        set_text: &format!("{} posts, ", model.info.person_view.counts.post_count),
                     },
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} comments", model.info.borrow().person_view.counts.comment_count),
+                        set_text: &format!("{} comments", model.info.person_view.counts.comment_count),
                     },
                 },
 
@@ -83,7 +82,7 @@ impl SimpleComponent for ProfilePage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let model = ProfilePage { info: RefCell::new(init), avatar, posts };
+        let model = ProfilePage { info: init, avatar, posts };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -94,7 +93,7 @@ impl SimpleComponent for ProfilePage {
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         match message {
             ProfileInput::UpdatePerson(person) => {
-                *self.info.borrow_mut() = person.clone();
+                self.info = person.clone();
                 self.avatar.emit(get_web_image_msg(person.person_view.person.avatar));
                 self.posts.guard().clear();
                 for post in person.posts {

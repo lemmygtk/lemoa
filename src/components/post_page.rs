@@ -2,14 +2,13 @@ use lemmy_api_common::{lemmy_db_views::structs::{CommentView}, post::GetPostResp
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
-use std::cell::RefCell;
 
 use crate::{api, util::{get_web_image_msg, get_web_image_url}};
 
 use super::comment_row::CommentRow;
 
 pub struct PostPage {
-    info: RefCell<GetPostResponse>,
+    info: GetPostResponse,
     image: Controller<WebImage>,
     creator_avatar: Controller<WebImage>,
     community_avatar: Controller<WebImage>,
@@ -46,12 +45,12 @@ impl SimpleComponent for PostPage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().post_view.post.name,
+                    set_text: &model.info.post_view.post.name,
                     add_css_class: "font-very-bold",
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().clone().post_view.post.body.unwrap_or("".to_string()),
+                    set_text: &model.info.clone().post_view.post.body.unwrap_or("".to_string()),
                     set_margin_top: 10,
                 },
 
@@ -65,7 +64,7 @@ impl SimpleComponent for PostPage {
                         set_text: "posted by "
                     },
 
-                    if model.info.borrow().post_view.creator.avatar.is_some() {
+                    if model.info.post_view.creator.avatar.is_some() {
                         gtk::Box {
                             set_hexpand: false,
                             set_margin_start: 10,
@@ -77,7 +76,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
-                        set_label: &model.info.borrow().post_view.creator.name,
+                        set_label: &model.info.post_view.creator.name,
                         connect_clicked => PostInput::OpenPerson,
                     },
 
@@ -85,7 +84,7 @@ impl SimpleComponent for PostPage {
                         set_text: " in "
                     },
 
-                    if model.info.borrow().community_view.community.icon.is_some() {
+                    if model.info.community_view.community.icon.is_some() {
                         gtk::Box {
                             set_hexpand: false,
                             #[local_ref]
@@ -96,7 +95,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
-                        set_label: &model.info.borrow().community_view.community.title,
+                        set_label: &model.info.community_view.community.title,
                         connect_clicked => PostInput::OpenCommunity,
                     },
 
@@ -117,11 +116,11 @@ impl SimpleComponent for PostPage {
 
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} comments, ", model.info.borrow().post_view.counts.comments),
+                        set_text: &format!("{} comments, ", model.info.post_view.counts.comments),
                     },
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} score", model.info.borrow().post_view.counts.score),
+                        set_text: &format!("{} score", model.info.post_view.counts.score),
                     },
                 },
 
@@ -144,7 +143,7 @@ impl SimpleComponent for PostPage {
         let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let creator_avatar = WebImage::builder().launch("".to_string()).detach();
         let community_avatar = WebImage::builder().launch("".to_string()).detach();
-        let model = PostPage { info: RefCell::new(init), image, comments, creator_avatar, community_avatar };
+        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar };
         
         let image = model.image.widget();
         let comments = model.comments.widget();
@@ -158,7 +157,7 @@ impl SimpleComponent for PostPage {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             PostInput::UpdatePost(post) => {
-                *self.info.borrow_mut() = post.clone();
+                self.info = post.clone();
                 
                 self.image.emit(get_web_image_msg(post.post_view.post.thumbnail_url));
                 self.community_avatar.emit(get_web_image_msg(post.community_view.community.icon));
@@ -180,15 +179,15 @@ impl SimpleComponent for PostPage {
                 }
             }
             PostInput::OpenPerson => {
-                let name = self.info.borrow().post_view.creator.name.clone();
+                let name = self.info.post_view.creator.name.clone();
                 let _ = sender.output(crate::AppMsg::OpenPerson(name));
             }
             PostInput::OpenCommunity => {
-                let community_name = self.info.borrow().community_view.community.name.clone();
+                let community_name = self.info.community_view.community.name.clone();
                 let _ = sender.output(crate::AppMsg::OpenCommunity(community_name));
             }
             PostInput::OpenLink => {
-                let post = self.info.borrow().post_view.post.clone();
+                let post = self.info.post_view.post.clone();
                 let mut link = get_web_image_url(post.url);
                 if link.is_empty() {
                     link = get_web_image_url(post.thumbnail_url);

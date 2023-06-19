@@ -2,14 +2,13 @@ use lemmy_api_common::{community::GetCommunityResponse, lemmy_db_views::structs:
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
-use std::cell::RefCell;
 
 use crate::{api, util::get_web_image_msg};
 
 use super::post_row::PostRow;
 
 pub struct CommunityPage {
-    info: RefCell<GetCommunityResponse>,
+    info: GetCommunityResponse,
     avatar: Controller<WebImage>,
     posts: FactoryVecDeque<PostRow>
 }
@@ -43,16 +42,16 @@ impl SimpleComponent for CommunityPage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().community_view.community.name,
+                    set_text: &model.info.community_view.community.name,
                     add_css_class: "font-very-bold",
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &model.info.borrow().clone().community_view.community.description.unwrap_or("".to_string()),
+                    set_text: &model.info.clone().community_view.community.description.unwrap_or("".to_string()),
                 },
                 gtk::Label {
                     #[watch]
-                    set_text: &format!("{} subscribers, ", model.info.borrow().community_view.counts.subscribers),
+                    set_text: &format!("{} subscribers", model.info.community_view.counts.subscribers),
                 },
 
                 gtk::Box {
@@ -64,11 +63,7 @@ impl SimpleComponent for CommunityPage {
 
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} posts, ", model.info.borrow().community_view.counts.posts),
-                    },
-                    gtk::Label {
-                        #[watch]
-                        set_text: &format!("{} comments", model.info.borrow().clone().community_view.counts.comments),
+                        set_text: &format!("{} posts, {} comments", model.info.community_view.counts.posts, model.info.community_view.counts.comments),
                     },
                 },
 
@@ -90,7 +85,7 @@ impl SimpleComponent for CommunityPage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let model = CommunityPage { info: RefCell::new(init), avatar, posts };
+        let model = CommunityPage { info: init, avatar, posts };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -101,7 +96,7 @@ impl SimpleComponent for CommunityPage {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             CommunityInput::UpdateCommunity(community) => {
-                *self.info.borrow_mut() = community.clone();
+                self.info = community.clone();
                 self.avatar.emit(get_web_image_msg(community.community_view.community.icon));
                 self.posts.guard().clear();
 
