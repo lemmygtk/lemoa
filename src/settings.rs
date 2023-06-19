@@ -1,11 +1,13 @@
 use std::{fs::File, path::PathBuf};
 use crate::gtk::glib;
+use lemmy_api_common::sensitive::Sensitive;
 use serde::{Deserialize, Serialize};
 use crate::APP_ID;
 
 #[derive(Deserialize, Serialize, Default)]
 pub struct Preferences {
     pub instance_url: String,
+    pub jwt: Option<Sensitive<String>>
 }
 
 pub fn data_path() -> PathBuf {

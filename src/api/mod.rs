@@ -38,3 +38,15 @@ where
         .send()?
         .json()
 }
+
+fn post<T, Params>(path: &str, params: &Params) -> Result<T, reqwest::Error>
+where
+    T: DeserializeOwned,
+    Params: Serialize + std::fmt::Debug,
+{
+    CLIENT
+        .post(&get_url(path))
+        .json(&params)
+        .send()?
+        .json()
+}
