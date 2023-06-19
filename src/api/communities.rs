@@ -1,7 +1,5 @@
 use lemmy_api_common::{community::{ListCommunities, ListCommunitiesResponse}, lemmy_db_schema::{SortType, SearchType}, lemmy_db_views_actor::structs::CommunityView};
 
-use crate::components::CLIENT;
-
 use super::search;
 
 pub fn fetch_communities(page: i64, query: Option<String>) -> std::result::Result<Vec<CommunityView>, reqwest::Error> {
@@ -12,8 +10,7 @@ pub fn fetch_communities(page: i64, query: Option<String>) -> std::result::Resul
             ..Default::default()
         };
 
-        let url = format!("{}/community/list", super::get_api_url());
-        Ok(CLIENT.get(&url).query(&params).send()?.json::<ListCommunitiesResponse>()?.communities)
+        Ok(super::get::<ListCommunitiesResponse, _>("/community/list", &params)?.communities)
     } else {
         Ok(search::fetch_search(page, query.unwrap(), Some(SearchType::Communities))?.communities)
     }
