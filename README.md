@@ -3,6 +3,7 @@ Native Gtk client for Lemmy (alpha state)
 
 # Current state
 Under development, not yet ready for daily usage
+
 Working:
 * Selecting lemmy instance
 * Listing trending posts
