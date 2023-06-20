@@ -1,4 +1,4 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse}, lemmy_db_schema::{newtypes::PostId, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView, sensitive::Sensitive};
 
 pub fn get_post(id: PostId) -> std::result::Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
@@ -27,4 +27,20 @@ pub fn get_comments(post_id: PostId) -> std::result::Result<Vec<CommentView>, re
 
 pub fn default_post() -> GetPostResponse {
     serde_json::from_str(include_str!("../examples/post.json")).unwrap()
+}
+
+pub fn create_post(
+    name: String,
+    body: String,
+    community_id: i32,
+    auth: Sensitive<String>,
+) -> Result<PostResponse, reqwest::Error> {
+    let params = CreatePost {
+        name,
+        body: Some(body),
+        community_id: CommunityId(community_id),
+        auth,
+        ..Default::default()
+    };
+    super::post("/post", &params)
 }

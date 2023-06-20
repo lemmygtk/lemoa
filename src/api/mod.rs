@@ -9,6 +9,8 @@ pub mod posts;
 pub mod search;
 pub mod user;
 pub mod auth;
+pub mod moderation;
+pub mod comment;
 
 static API_VERSION: &str = "v3";
 
