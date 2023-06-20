@@ -13,9 +13,12 @@ Working:
 * Searching communities
 * Logging in with an account
 * Writing posts or comments
+* Viewing subscribed posts
+* Following communities
+* Voting for or against posts or comments
 
 Not yet working, but planned to be added soon:
-* Deleting or upvoting posts or comments
+* Deleting posts or comments
 * Private messages
 * Viewing the next pages of posts or communities
 
