@@ -1,4 +1,6 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView, sensitive::Sensitive};
+use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+
+use crate::util;
 
 pub fn get_post(id: PostId) -> std::result::Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
@@ -33,13 +35,12 @@ pub fn create_post(
     name: String,
     body: String,
     community_id: i32,
-    auth: Sensitive<String>,
 ) -> Result<PostResponse, reqwest::Error> {
     let params = CreatePost {
         name,
         body: Some(body),
         community_id: CommunityId(community_id),
-        auth,
+        auth: util::get_auth_token().unwrap(),
         ..Default::default()
     };
     super::post("/post", &params)

@@ -1,4 +1,4 @@
-use crate::util::markdown_to_pango_markup;
+use crate::{util::markdown_to_pango_markup, dialogs::create_post::{CreatePostDialog, CREATE_POST_DIALOG_BROKER, DialogMsg, CreatePostDialogOutput}};
 use lemmy_api_common::{community::GetCommunityResponse, lemmy_db_views::structs::PostView};
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
@@ -11,13 +11,18 @@ use super::post_row::PostRow;
 pub struct CommunityPage {
     info: GetCommunityResponse,
     avatar: Controller<WebImage>,
-    posts: FactoryVecDeque<PostRow>
+    posts: FactoryVecDeque<PostRow>,
+    #[allow(dead_code)]
+    create_post_dialog: Controller<CreatePostDialog>
 }
 
 #[derive(Debug)]
 pub enum CommunityInput {
     UpdateCommunity(GetCommunityResponse),
-    DoneFetchPosts(Vec<PostView>)
+    DoneFetchPosts(Vec<PostView>),
+    OpenCreatePostDialog,
+    CreatePostRequest(String, String),
+    CreatedPost(PostView)
 }
 
 #[relm4::component(pub)]
@@ -67,6 +72,12 @@ impl SimpleComponent for CommunityPage {
                         #[watch]
                         set_text: &format!("{} posts, {} comments", model.info.community_view.counts.posts, model.info.community_view.counts.comments),
                     },
+
+                    gtk::Button {
+                        set_label: "Create post",
+                        set_margin_start: 10,
+                        connect_clicked => CommunityInput::OpenCreatePostDialog,
+                    }
                 },
 
                 gtk::Separator {},
@@ -87,7 +98,15 @@ impl SimpleComponent for CommunityPage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let model = CommunityPage { info: init, avatar, posts };
+
+        let dialog = CreatePostDialog::builder()
+            .transient_for(root)
+            .launch_with_broker((), &CREATE_POST_DIALOG_BROKER)
+            .forward(sender.input_sender(),  |msg| match msg {
+                CreatePostDialogOutput::CreatePostRequest(name, body) => CommunityInput::CreatePostRequest(name, body)
+            });
+
+        let model = CommunityPage { info: init, avatar, posts, create_post_dialog: dialog };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -114,6 +133,22 @@ impl SimpleComponent for CommunityPage {
                 for post in posts {
                     self.posts.guard().push_back(post);
                 }
+            }
+            CommunityInput::OpenCreatePostDialog => {
+                CREATE_POST_DIALOG_BROKER.send(DialogMsg::Show)
+            }
+            CommunityInput::CreatedPost(post) => {
+                self.posts.guard().push_front(post);
+            }
+            CommunityInput::CreatePostRequest(name, body) => {
+                let id = self.info.community_view.community.id.0.clone();
+                std::thread::spawn(move || {
+                    let message = match api::post::create_post(name, body, id) {
+                        Ok(post) => Some(CommunityInput::CreatedPost(post.post_view)),
+                        Err(err) => { println!("{}", err.to_string()); None }
+                    };
+                    if message.is_some() { sender.input(message.unwrap()) };
+                });
             }
         }
     }

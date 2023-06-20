@@ -2,6 +2,7 @@ pub mod settings;
 pub mod api;
 pub mod components;
 pub mod util;
+pub mod dialogs;
 
 use api::{user::default_person, community::default_community, post::default_post};
 use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}};
