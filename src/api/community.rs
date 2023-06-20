@@ -12,7 +12,7 @@ pub fn get_community(name: String) -> std::result::Result<GetCommunityResponse, 
     super::get("/community", &params)
 }
 
-pub async fn follow_community(
+pub fn follow_community(
     community_id: i32,
     follow: bool,
 ) -> Result<CommunityResponse, reqwest::Error> {

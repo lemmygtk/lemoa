@@ -272,7 +272,7 @@ impl SimpleComponent for App {
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let communities = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let profile_page = ProfilePage::builder().launch(default_person()).forward(sender.input_sender(), |msg| msg);
-        let community_page = CommunityPage::builder().launch(default_community()).forward(sender.input_sender(), |msg| msg);
+        let community_page = CommunityPage::builder().launch(default_community().community_view).forward(sender.input_sender(), |msg| msg);
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
         
         let model = App { state, posts, communities, profile_page, community_page, post_page, message: None, latest_action: None };
@@ -383,7 +383,7 @@ impl SimpleComponent for App {
                 });
             }
             AppMsg::DoneFetchCommunity(community) => {
-                self.community_page.sender().emit(community_page::CommunityInput::UpdateCommunity(community));
+                self.community_page.sender().emit(community_page::CommunityInput::UpdateCommunity(community.community_view));
                 self.state = AppState::Community;
             }
             AppMsg::OpenPost(post_id) => {
