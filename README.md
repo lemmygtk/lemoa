@@ -39,5 +39,13 @@ Clone the repository and run
 cargo run
 ```
 
+# Building with Docker
+```
+sudo docker build --no-cache . -t lemoa:latest
+CONTAINER_ID=$(sudo docker create --name lemoa -t lemoa:latest)
+sudo docker cp $(CONTAINER_ID):/root/lemoa/target/release/lemoa .
+```
+Once the build is done, there will be an executable `lemoa` binary file in your current directory, executing it starts Lemoa :tada:.
+
 # License
 Lemoa is licensed under the [**GNU General Public License**](https://www.gnu.org/licenses/gpl.html): You can use, study and share it as you want.
