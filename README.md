@@ -12,10 +12,10 @@ Working:
 * Viewing trending communities
 * Searching communities
 * Logging in with an account
+* Writing posts or comments
 
 Not yet working, but planned to be added soon:
-* Writing posts or comments
-* Insteracting with posts or comments
+* Deleting or upvoting posts or comments
 * Private messages
 * Viewing the next pages of posts or communities
 
