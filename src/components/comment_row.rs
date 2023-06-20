@@ -6,10 +6,14 @@ use relm4_components::web_image::WebImage;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
+use super::voting_row::VotingRowModel;
+use super::voting_row::VotingStats;
+
 #[derive(Debug)]
 pub struct CommentRow {
     comment: CommentView,
-    avatar: Controller<WebImage>
+    avatar: Controller<WebImage>,
+    voting_row: Controller<VotingRowModel>
 }
 
 #[derive(Debug)]
@@ -62,10 +66,8 @@ impl FactoryComponent for CommentRow {
                set_use_markup: true,
             },
 
-            gtk::Label {
-                set_label: &format!("{} score", self.comment.counts.score),
-                set_halign: gtk::Align::Start,
-            },
+            #[local_ref]
+            voting_row -> gtk::Box {},
             
             gtk::Separator {}
         }
@@ -77,8 +79,9 @@ impl FactoryComponent for CommentRow {
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         let avatar = WebImage::builder().launch(get_web_image_url(value.community.clone().icon)).detach();
+        let voting_row = VotingRowModel::builder().launch(VotingStats::from_comment(value.clone().counts, value.my_vote)).detach();
 
-        Self { comment: value, avatar }
+        Self { comment: value, avatar, voting_row }
     }
 
     fn init_widgets(
@@ -89,6 +92,7 @@ impl FactoryComponent for CommentRow {
             sender: FactorySender<Self>,
         ) -> Self::Widgets {
         let community_image = self.avatar.widget();
+        let voting_row = self.voting_row.widget();
         let widgets = view_output!();
         widgets
     }

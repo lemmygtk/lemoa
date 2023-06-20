@@ -167,7 +167,7 @@ impl SimpleComponent for CommunityPage {
                         Ok(post) => Some(CommunityInput::CreatedPost(post.post_view)),
                         Err(err) => { println!("{}", err.to_string()); None }
                     };
-                    if message.is_some() { sender.input(message.unwrap()) };
+                    if let Some(message) = message { sender.input(message) };
                 });
             }
             CommunityInput::ToggleSubscription => {

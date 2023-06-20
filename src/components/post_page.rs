@@ -5,7 +5,7 @@ use relm4_components::web_image::WebImage;
 
 use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::create_post::{CreatePostDialog, CreatePostDialogOutput, DialogMsg, CREATE_COMMENT_DIALOG_BROKER, DialogType}};
 
-use super::comment_row::CommentRow;
+use super::{comment_row::CommentRow, voting_row::{VotingRowModel, VotingStats, VotingRowInput}};
 
 pub struct PostPage {
     info: GetPostResponse,
@@ -14,7 +14,8 @@ pub struct PostPage {
     community_avatar: Controller<WebImage>,
     comments: FactoryVecDeque<CommentRow>,
     #[allow(dead_code)]
-    create_comment_dialog: Controller<CreatePostDialog>
+    create_comment_dialog: Controller<CreatePostDialog>,
+    voting_row: Controller<VotingRowModel>
 }
 
 #[derive(Debug)]
@@ -122,9 +123,13 @@ impl SimpleComponent for PostPage {
                     set_margin_bottom: 10,
                     set_halign: gtk::Align::Center,
 
+                    #[local_ref]
+                    voting_row -> gtk::Box {
+                        set_margin_end: 10,
+                    },
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} comments, {} score", model.info.post_view.counts.comments, model.info.post_view.counts.score),
+                        set_text: &format!("{} comments", model.info.post_view.counts.comments),
                     },
                     gtk::Button {
                         set_label: "Comment",
@@ -158,12 +163,14 @@ impl SimpleComponent for PostPage {
             .forward(sender.input_sender(),  |msg| match msg {
                 CreatePostDialogOutput::CreateRequest(_name, body) => PostInput::CreateCommentRequest(body)
             });
-        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar, create_comment_dialog: dialog, };
+        let voting_row = VotingRowModel::builder().launch(VotingStats::default()).detach();
+        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar, create_comment_dialog: dialog, voting_row };
         
         let image = model.image.widget();
         let comments = model.comments.widget();
         let creator_avatar = model.creator_avatar.widget();
         let community_avatar = model.community_avatar.widget();
+        let voting_row = model.voting_row.widget();
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
@@ -178,6 +185,7 @@ impl SimpleComponent for PostPage {
                 self.community_avatar.emit(get_web_image_msg(post.community_view.community.icon));
                 self.creator_avatar.emit(get_web_image_msg(post.post_view.creator.avatar));
 
+                self.voting_row.emit(VotingRowInput::UpdateStats(VotingStats::from_post(post.post_view.counts.clone(), post.post_view.my_vote)));
                 self.comments.guard().clear();
 
                 std::thread::spawn(move || {

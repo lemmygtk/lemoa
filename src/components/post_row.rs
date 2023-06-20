@@ -5,11 +5,14 @@ use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_url;
 
+use super::voting_row::{VotingRowModel, VotingStats};
+
 #[derive(Debug)]
 pub struct PostRow {
     post: PostView,
     author_image: Controller<WebImage>,
     community_image: Controller<WebImage>,
+    voting_row: Controller<VotingRowModel>
 }
 
 #[derive(Debug)]
@@ -91,9 +94,16 @@ impl FactoryComponent for PostRow {
                 add_css_class: "font-bold",
             },
 
-            gtk::Label {
-                set_halign: gtk::Align::Start,
-                set_text: &format!("{} score, {} comments", self.post.counts.score, self.post.clone().counts.comments),
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                #[local_ref]
+                voting_row -> gtk::Box {
+                    set_margin_end: 10,
+                },
+                gtk::Label {
+                    set_halign: gtk::Align::Start,
+                    set_text: &format!("{} comments", self.post.clone().counts.comments),
+                },
             },
 
             gtk::Separator {
@@ -107,8 +117,9 @@ impl FactoryComponent for PostRow {
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         let author_image= WebImage::builder().launch(get_web_image_url(value.creator.clone().avatar)).detach();
         let community_image= WebImage::builder().launch(get_web_image_url(value.creator.clone().avatar)).detach();
+        let voting_row = VotingRowModel::builder().launch(VotingStats::from_post(value.clone().counts, value.my_vote)).detach();
 
-        Self { post: value, author_image, community_image }
+        Self { post: value, author_image, community_image, voting_row }
     }
 
     fn init_widgets(
@@ -120,6 +131,7 @@ impl FactoryComponent for PostRow {
         ) -> Self::Widgets {
         let author_image = self.author_image.widget();
         let community_image = self.community_image.widget();
+        let voting_row = self.voting_row.widget();
         let widgets = view_output!();
         widgets
     }
