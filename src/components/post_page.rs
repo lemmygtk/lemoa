@@ -65,6 +65,7 @@ impl SimpleComponent for PostPage {
                     set_margin_top: 10,
                     set_spacing: 10,
                     set_vexpand: false,
+                    set_halign: gtk::Align::Center,
 
                     gtk::Label {
                         set_text: "posted by "
@@ -119,16 +120,12 @@ impl SimpleComponent for PostPage {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_margin_top: 10,
                     set_margin_bottom: 10,
+                    set_halign: gtk::Align::Center,
 
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} comments, ", model.info.post_view.counts.comments),
+                        set_text: &format!("{} comments, {} score", model.info.post_view.counts.comments, model.info.post_view.counts.score),
                     },
-                    gtk::Label {
-                        #[watch]
-                        set_text: &format!("{} score", model.info.post_view.counts.score),
-                    },
-
                     gtk::Button {
                         set_label: "Comment",
                         set_margin_start: 10,

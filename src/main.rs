@@ -7,7 +7,7 @@ pub mod dialogs;
 use api::{user::default_person, community::default_community, post::default_post};
 use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}};
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::newtypes::PostId, post::GetPostResponse, community::GetCommunityResponse};
+use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::PostId, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
 
 static APP_ID: &str = "com.lemmy-gtk.lemoa";
@@ -45,7 +45,7 @@ pub enum AppMsg {
     Retry,
     ShowMessage(String),
     DoneChoosingInstance(String),
-    StartFetchPosts,
+    StartFetchPosts(Option<ListingType>),
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
     ViewCommunities(Option<String>),
@@ -76,8 +76,12 @@ impl SimpleComponent for App {
                     set_menu_model: Some(&menu_model),
                 },
                 pack_start = &gtk::Button {
-                    set_label: "Posts",
-                    connect_clicked => AppMsg::StartFetchPosts,
+                    set_label: "Recommended",
+                    connect_clicked => AppMsg::StartFetchPosts(None),
+                },
+                pack_start = &gtk::Button {
+                    set_label: "Subscribed",
+                    connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed)),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Communities",
@@ -160,7 +164,7 @@ impl SimpleComponent for App {
 
                         gtk::Button {
                             set_label: "Cancel",
-                            connect_clicked => AppMsg::StartFetchPosts,
+                            connect_clicked => AppMsg::StartFetchPosts(None),
                             set_margin_end: 10,
                         },
                         gtk::Button {
@@ -274,7 +278,7 @@ impl SimpleComponent for App {
         let model = App { state, posts, communities, profile_page, community_page, post_page, message: None, latest_action: None };
 
         // fetch posts if that's the initial page
-        if !instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts) };
+        if !instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
 
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
@@ -315,14 +319,14 @@ impl SimpleComponent for App {
                 preferences.instance_url = instance_url;
                 settings::save_prefs(&preferences);
                 self.state = AppState::Loading;
-                sender.input(AppMsg::StartFetchPosts);
+                sender.input(AppMsg::StartFetchPosts(None));
             }
             AppMsg::ChooseInstance => {
                 self.state = AppState::ChooseInstance;
             }
-            AppMsg::StartFetchPosts => {
+            AppMsg::StartFetchPosts(type_) => {
                 std::thread::spawn(move || {
-                    let message = match api::posts::list_posts(1, None) {
+                    let message = match api::posts::list_posts(1, None, type_) {
                         Ok(posts) => AppMsg::DoneFetchPosts(posts),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };
@@ -406,7 +410,7 @@ impl SimpleComponent for App {
                         Ok(login) => {
                             if let Some(token) = login.jwt {
                                 util::set_auth_token(Some(token));
-                                AppMsg::StartFetchPosts
+                                AppMsg::StartFetchPosts(None)
                             } else {
                                 AppMsg::ShowMessage("Wrong credentials!".to_string())
                             }
@@ -424,7 +428,7 @@ impl SimpleComponent for App {
                 self.state = AppState::Message;
             }
             AppMsg::Retry => {
-                sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts));
+                sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts(None)));
             }
         }
     }

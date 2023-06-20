@@ -123,7 +123,7 @@ impl SimpleComponent for CommunityPage {
 
                 std::thread::spawn(move || {
                     if community.community_view.counts.posts == 0 { return; }
-                    let community_posts = api::posts::list_posts(1, Some(community.community_view.community.name));
+                    let community_posts = api::posts::list_posts(1, Some(community.community_view.community.name), None);
                     if let Ok(community_posts) = community_posts {
                         sender.input(CommunityInput::DoneFetchPosts(community_posts));
                     }
