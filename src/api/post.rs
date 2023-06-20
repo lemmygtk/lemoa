@@ -1,21 +1,23 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
 
 use crate::util;
 
-pub fn get_post(id: PostId) -> std::result::Result<GetPostResponse, reqwest::Error> {
+pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
         id: Some(id),
+        auth: util::get_auth_token(),
         ..Default::default()
     };
 
     super::get("/post", &params)
 }
 
-pub fn get_comments(post_id: PostId) -> std::result::Result<Vec<CommentView>, reqwest::Error> {
+pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error> {
     let params = GetComments {
         post_id: Some(post_id),
         sort: Some(CommentSortType::Hot),
         type_: Some(ListingType::All),
+        auth: util::get_auth_token(),
         ..Default::default()
     };
 
@@ -44,4 +46,14 @@ pub fn create_post(
         ..Default::default()
     };
     super::post("/post", &params)
+}
+
+// for score, use 1 to upvote, -1 to vote down and 0 to reset the user's voting
+pub fn like_post(post_id: PostId, score: i16) -> Result<PostResponse, reqwest::Error> {
+    let params = CreatePostLike {
+        post_id,
+        score,
+        auth: util::get_auth_token().unwrap(),
+    };
+    super::post("/post/like", &params)
 }

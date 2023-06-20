@@ -1,5 +1,7 @@
 use lemmy_api_common::{community::{ListCommunities, ListCommunitiesResponse}, lemmy_db_schema::{SortType, SearchType}, lemmy_db_views_actor::structs::CommunityView};
 
+use crate::util;
+
 use super::search;
 
 pub fn fetch_communities(page: i64, query: Option<String>) -> std::result::Result<Vec<CommunityView>, reqwest::Error> {
@@ -7,6 +9,7 @@ pub fn fetch_communities(page: i64, query: Option<String>) -> std::result::Resul
         let params = ListCommunities {
             sort: Some(SortType::TopMonth),
             page: Some(page),
+            auth: util::get_auth_token(),
             ..Default::default()
         };
 

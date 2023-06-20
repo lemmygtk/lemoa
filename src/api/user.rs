@@ -1,9 +1,12 @@
 use lemmy_api_common::{person::{GetPersonDetailsResponse, GetPersonDetails}};
 
+use crate::util;
+
 pub fn get_user(username: String, page: i64) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
     let params = GetPersonDetails {
         page: Some(page),
         username: Some(username),
+        auth: util::get_auth_token(),
         ..Default::default()
     };
 
