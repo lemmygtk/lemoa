@@ -1,9 +1,9 @@
-use lemmy_api_common::{lemmy_db_views::structs::{CommentView}, post::GetPostResponse};
+use lemmy_api_common::{lemmy_db_views::structs::CommentView, post::GetPostResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}};
+use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::create_post::{CreatePostDialog, CreatePostDialogOutput, DialogMsg, CREATE_COMMENT_DIALOG_BROKER, DialogType}};
 
 use super::comment_row::CommentRow;
 
@@ -12,7 +12,9 @@ pub struct PostPage {
     image: Controller<WebImage>,
     creator_avatar: Controller<WebImage>,
     community_avatar: Controller<WebImage>,
-    comments: FactoryVecDeque<CommentRow>
+    comments: FactoryVecDeque<CommentRow>,
+    #[allow(dead_code)]
+    create_comment_dialog: Controller<CreatePostDialog>
 }
 
 #[derive(Debug)]
@@ -21,7 +23,10 @@ pub enum PostInput {
     DoneFetchComments(Vec<CommentView>),
     OpenPerson,
     OpenCommunity,
-    OpenLink
+    OpenLink,
+    OpenCreateCommentDialog,
+    CreateCommentRequest(String),
+    CreatedComment(CommentView)
 }
 
 #[relm4::component(pub)]
@@ -123,6 +128,12 @@ impl SimpleComponent for PostPage {
                         #[watch]
                         set_text: &format!("{} score", model.info.post_view.counts.score),
                     },
+
+                    gtk::Button {
+                        set_label: "Comment",
+                        set_margin_start: 10,
+                        connect_clicked => PostInput::OpenCreateCommentDialog,
+                    }
                 },
 
                 gtk::Separator {},
@@ -144,7 +155,13 @@ impl SimpleComponent for PostPage {
         let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let creator_avatar = WebImage::builder().launch("".to_string()).detach();
         let community_avatar = WebImage::builder().launch("".to_string()).detach();
-        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar };
+        let dialog = CreatePostDialog::builder()
+            .transient_for(root)
+            .launch_with_broker(DialogType::Comment, &CREATE_COMMENT_DIALOG_BROKER)
+            .forward(sender.input_sender(),  |msg| match msg {
+                CreatePostDialogOutput::CreateRequest(_name, body) => PostInput::CreateCommentRequest(body)
+            });
+        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar, create_comment_dialog: dialog, };
         
         let image = model.image.widget();
         let comments = model.comments.widget();
@@ -198,6 +215,22 @@ impl SimpleComponent for PostPage {
                 }
                 if link.is_empty() { return; }
                 gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
+            }
+            PostInput::OpenCreateCommentDialog => {
+                CREATE_COMMENT_DIALOG_BROKER.send(DialogMsg::Show)
+            }
+            PostInput::CreatedComment(comment) => {
+                self.comments.guard().push_front(comment);
+            }
+            PostInput::CreateCommentRequest(body) => {
+                let id = self.info.post_view.post.id.0;
+                std::thread::spawn(move || {
+                    let message = match api::comment::create_comment(id, body, None) {
+                        Ok(comment) => Some(PostInput::CreatedComment(comment.comment_view)),
+                        Err(err) => { println!("{}", err.to_string()); None }
+                    };
+                    if message.is_some() { sender.input(message.unwrap()) };
+                });
             }
         }
     }

@@ -1,4 +1,4 @@
-use crate::{util::markdown_to_pango_markup, dialogs::create_post::{CreatePostDialog, CREATE_POST_DIALOG_BROKER, DialogMsg, CreatePostDialogOutput}};
+use crate::{util::markdown_to_pango_markup, dialogs::create_post::{CreatePostDialog, CREATE_POST_DIALOG_BROKER, DialogMsg, CreatePostDialogOutput, DialogType}};
 use lemmy_api_common::{community::GetCommunityResponse, lemmy_db_views::structs::PostView};
 use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
@@ -101,9 +101,9 @@ impl SimpleComponent for CommunityPage {
 
         let dialog = CreatePostDialog::builder()
             .transient_for(root)
-            .launch_with_broker((), &CREATE_POST_DIALOG_BROKER)
+            .launch_with_broker(DialogType::Post, &CREATE_POST_DIALOG_BROKER)
             .forward(sender.input_sender(),  |msg| match msg {
-                CreatePostDialogOutput::CreatePostRequest(name, body) => CommunityInput::CreatePostRequest(name, body)
+                CreatePostDialogOutput::CreateRequest(name, body) => CommunityInput::CreatePostRequest(name, body)
             });
 
         let model = CommunityPage { info: init, avatar, posts, create_post_dialog: dialog };
