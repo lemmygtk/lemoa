@@ -1,4 +1,4 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike, DeletePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike, DeletePost, EditPost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
 
 use crate::settings;
 
@@ -36,16 +36,35 @@ pub fn default_post() -> GetPostResponse {
 pub fn create_post(
     name: String,
     body: String,
+    url: Option<reqwest::Url>,
     community_id: i32,
 ) -> Result<PostResponse, reqwest::Error> {
     let params = CreatePost {
         name,
         body: Some(body),
+        url,
         community_id: CommunityId(community_id),
         auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::post("/post", &params)
+}
+
+pub fn edit_post(
+    name: String,
+    url: Option<reqwest::Url>,
+    body: String,
+    post_id: i32
+) -> Result<PostResponse, reqwest::Error> {
+    let params = EditPost {
+        name: Some(name),
+        body: Some(body),
+        url,
+        post_id: PostId(post_id),
+        auth: settings::get_current_account().jwt.unwrap(),
+        ..Default::default()
+    };
+    super::put("/post", &params)
 }
 
 // for score, use 1 to upvote, -1 to vote down and 0 to reset the user's voting

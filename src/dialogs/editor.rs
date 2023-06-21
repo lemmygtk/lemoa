@@ -1,13 +1,20 @@
-use relm4::{prelude::*, MessageBroker};
+use relm4::prelude::*;
 use gtk::prelude::*;
 
-pub static CREATE_POST_DIALOG_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
-pub static CREATE_COMMENT_DIALOG_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
+#[derive(Debug, Clone, Default)]
+pub struct EditorData {
+    pub name: String,
+    pub body: String,
+    pub url: Option<reqwest::Url>,
+}
 
-
-pub struct CreatePostDialog {
+pub struct EditorDialog {
     type_: DialogType,
+    is_new: bool,
     visible: bool,
+    name_buffer: gtk::EntryBuffer,
+    url_buffer: gtk::EntryBuffer,
+    body_buffer: gtk::TextBuffer,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -20,19 +27,22 @@ pub enum DialogType {
 pub enum DialogMsg {
     Show,
     Hide,
-    Okay(String, String)
+    UpdateType(DialogType, bool),
+    UpdateData(EditorData),
+    Okay
 }
 
 #[derive(Debug)]
-pub enum CreatePostDialogOutput {
-    CreateRequest(String, String)
+pub enum EditorOutput {
+    CreateRequest(EditorData),
+    EditRequest(EditorData)
 }
 
 #[relm4::component(pub)]
-impl SimpleComponent for CreatePostDialog {
+impl SimpleComponent for EditorDialog {
     type Init = DialogType;
     type Input = DialogMsg;
-    type Output = CreatePostDialogOutput;
+    type Output = EditorOutput;
 
     view! {
         dialog = gtk::Dialog {
@@ -57,11 +67,17 @@ impl SimpleComponent for CreatePostDialog {
                                 set_label: "Create post",
                                 add_css_class: "font-bold"
                             },
-                            #[name(name)]
                             gtk::Entry {    
                                 set_placeholder_text: Some("Title"),
                                 set_margin_top: 10,
                                 set_margin_bottom: 10,
+                                set_buffer: &model.name_buffer,
+                            },
+                            gtk::Entry {    
+                                set_placeholder_text: Some("Url"),
+                                set_margin_top: 10,
+                                set_margin_bottom: 10,
+                                set_buffer: &model.url_buffer,
                             },
                         }
                     }
@@ -97,22 +113,7 @@ impl SimpleComponent for CreatePostDialog {
                     },
                     gtk::Button {
                         set_label: "Okay",
-                        connect_clicked[sender, name, body] => move |_| {
-                            let name = name.text().to_string();
-                            let body_buffer = body.buffer();
-                            let (start, end) = &body_buffer.bounds();
-                            let body = body_buffer.text(start, end, true).to_string();
-                            match model.type_ {
-                                DialogType::Post => {
-                                    if name.is_empty() || body.is_empty() { return; }
-                                    sender.input(DialogMsg::Okay(name, body))
-                                }
-                                DialogType::Comment => {
-                                    if name.is_empty() { return; }
-                                    sender.input(DialogMsg::Okay(name, body))
-                                }
-                            }
-                        },
+                        connect_clicked => DialogMsg::Okay,
                     }
                 }
             },
@@ -129,7 +130,10 @@ impl SimpleComponent for CreatePostDialog {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = CreatePostDialog { type_: init, visible: false };
+        let name_buffer = gtk::EntryBuffer::builder().build();
+        let url_buffer = gtk::EntryBuffer::builder().build();
+        let body_buffer = gtk::TextBuffer::builder().build();
+        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -137,10 +141,34 @@ impl SimpleComponent for CreatePostDialog {
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             DialogMsg::Show => self.visible = true,
-            DialogMsg::Hide => self.visible = false,
-            DialogMsg::Okay(name, body) => {
-                let _ = sender.output(CreatePostDialogOutput::CreateRequest(name, body));
+            DialogMsg::Hide => {
+                self.name_buffer.set_text("");
+                self.url_buffer.set_text("");
+                self.body_buffer.set_text("");
                 self.visible = false;
+            },
+            DialogMsg::Okay => {
+                let name = self.name_buffer.text().to_string();
+                let url = self.url_buffer.text().to_string();
+                let (start, end) = &self.body_buffer.bounds();
+                let body = self.body_buffer.text(start, end, true).to_string();
+                let url = reqwest::Url::parse(&url).ok();
+                let post = EditorData { name, body, url };
+                let message = match self.is_new {
+                    true => EditorOutput::CreateRequest(post),
+                    false => EditorOutput::EditRequest(post)
+                };
+                let _ = sender.output(message);
+                self.visible = false;
+            }
+            DialogMsg::UpdateType(type_, is_new) => {
+                self.type_ = type_;
+                self.is_new = is_new;
+            }
+            DialogMsg::UpdateData(data) => {
+                self.name_buffer.set_text(data.name);
+                if let Some(url) = data.url { self.url_buffer.set_text(url.to_string()); }
+                self.body_buffer.set_text(&data.body.clone());
             }
         }
     }

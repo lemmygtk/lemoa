@@ -1,11 +1,13 @@
-use lemmy_api_common::{lemmy_db_views::structs::CommentView, post::GetPostResponse};
-use relm4::{prelude::*, factory::FactoryVecDeque};
+use lemmy_api_common::{lemmy_db_views::structs::{CommentView, PostView}, post::GetPostResponse};
+use relm4::{prelude::*, factory::FactoryVecDeque, MessageBroker};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::create_post::{CreatePostDialog, CreatePostDialogOutput, DialogMsg, CREATE_COMMENT_DIALOG_BROKER, DialogType}, settings};
+use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::editor::{EditorDialog, EditorOutput, DialogMsg, DialogType, EditorData}, settings};
 
 use super::{comment_row::CommentRow, voting_row::{VotingRowModel, VotingStats, VotingRowInput}};
+
+pub static POST_PAGE_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
 
 pub struct PostPage {
     info: GetPostResponse,
@@ -14,7 +16,7 @@ pub struct PostPage {
     community_avatar: Controller<WebImage>,
     comments: FactoryVecDeque<CommentRow>,
     #[allow(dead_code)]
-    create_comment_dialog: Controller<CreatePostDialog>,
+    create_comment_dialog: Controller<EditorDialog>,
     voting_row: Controller<VotingRowModel>
 }
 
@@ -26,10 +28,12 @@ pub enum PostInput {
     OpenCommunity,
     OpenLink,
     OpenCreateCommentDialog,
-    CreateCommentRequest(String),
+    CreateCommentRequest(EditorData),
+    EditPostRequest(EditorData),
     CreatedComment(CommentView),
-    DeletePost,
     EditPost,
+    DeletePost,
+    DoneEditPost(PostView)
 }
 
 #[relm4::component(pub)]
@@ -71,7 +75,7 @@ impl SimpleComponent for PostPage {
                     set_halign: gtk::Align::Center,
 
                     gtk::Label {
-                        set_text: "posted by "
+                        set_text: "posted by"
                     },
 
                     if model.info.post_view.creator.avatar.is_some() {
@@ -116,6 +120,16 @@ impl SimpleComponent for PostPage {
                     gtk::Button {
                         set_label: "View",
                         connect_clicked => PostInput::OpenLink,
+                    },
+
+                    if model.info.post_view.creator.id.0 == settings::get_current_account().id {
+                        gtk::Button {
+                            set_icon_name: "document-edit",
+                            connect_clicked => PostInput::EditPost,
+                            set_margin_start: 10,
+                        }
+                    } else {
+                        gtk::Box {}
                     },
 
                     if model.info.post_view.creator.id.0 == settings::get_current_account().id {
@@ -169,11 +183,12 @@ impl SimpleComponent for PostPage {
         let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let creator_avatar = WebImage::builder().launch("".to_string()).detach();
         let community_avatar = WebImage::builder().launch("".to_string()).detach();
-        let dialog = CreatePostDialog::builder()
+        let dialog = EditorDialog::builder()
             .transient_for(root)
-            .launch_with_broker(DialogType::Comment, &CREATE_COMMENT_DIALOG_BROKER)
+            .launch_with_broker(DialogType::Comment, &POST_PAGE_BROKER)
             .forward(sender.input_sender(),  |msg| match msg {
-                CreatePostDialogOutput::CreateRequest(_name, body) => PostInput::CreateCommentRequest(body)
+                EditorOutput::CreateRequest(comment) => PostInput::CreateCommentRequest(comment),
+                EditorOutput::EditRequest(post) => PostInput::EditPostRequest(post)
             });
         let voting_row = VotingRowModel::builder().launch(VotingStats::default()).detach();
         let model = PostPage { info: init, image, comments, creator_avatar, community_avatar, create_comment_dialog: dialog, voting_row };
@@ -234,19 +249,19 @@ impl SimpleComponent for PostPage {
                 gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
             }
             PostInput::OpenCreateCommentDialog => {
-                CREATE_COMMENT_DIALOG_BROKER.send(DialogMsg::Show)
+                POST_PAGE_BROKER.send(DialogMsg::Show)
             }
             PostInput::CreatedComment(comment) => {
                 self.comments.guard().push_front(comment);
             }
-            PostInput::CreateCommentRequest(body) => {
+            PostInput::CreateCommentRequest(post) => {
                 let id = self.info.post_view.post.id.0;
                 std::thread::spawn(move || {
-                    let message = match api::comment::create_comment(id, body, None) {
+                    let message = match api::comment::create_comment(id, post.body, None) {
                         Ok(comment) => Some(PostInput::CreatedComment(comment.comment_view)),
                         Err(err) => { println!("{}", err.to_string()); None }
                     };
-                    if message.is_some() { sender.input(message.unwrap()) };
+                    if let Some(message) = message { sender.input(message) };
                 });
             }
             PostInput::DeletePost => {
@@ -257,7 +272,31 @@ impl SimpleComponent for PostPage {
                 });
             }
             PostInput::EditPost => {
-
+                let url = match self.info.post_view.post.url.clone() {
+                    Some(url) => url.to_string(),
+                    None => String::from("")
+                };
+                let data = EditorData {
+                    name: self.info.post_view.post.name.clone(),
+                    body: self.info.post_view.post.body.clone().unwrap_or(String::from("")),
+                    url: reqwest::Url::parse(&url).ok(),
+                };
+                POST_PAGE_BROKER.send(DialogMsg::UpdateData(data));
+                POST_PAGE_BROKER.send(DialogMsg::UpdateType(DialogType::Post, false));
+                POST_PAGE_BROKER.send(DialogMsg::Show)
+            }
+            PostInput::EditPostRequest(post) => {
+                let id = self.info.post_view.post.id.0;
+                std::thread::spawn(move || {
+                    let message = match api::post::edit_post(post.name, post.url, post.body, id) {
+                        Ok(post) => Some(PostInput::DoneEditPost(post.post_view)),
+                        Err(err) => { println!("{}", err.to_string()); None }
+                    };
+                    if let Some(message) = message { sender.input(message) };
+                });
+            }
+            PostInput::DoneEditPost(post) => {
+                self.info.post_view = post;
             }
         }
     }
