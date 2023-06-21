@@ -70,7 +70,7 @@ impl FactoryComponent for CommentRow {
             },
 
             gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Horizontal,
                 #[local_ref]
                 voting_row -> gtk::Box {},
 

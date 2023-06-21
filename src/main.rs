@@ -254,6 +254,7 @@ impl SimpleComponent for App {
     menu! {
         menu_model: {
             "Choose Instance" => ChangeInstanceAction,
+            "Profile" => ProfileAction,
             "Login" => LoginAction,
             "Logout" => LogoutAction
         }
@@ -294,6 +295,11 @@ impl SimpleComponent for App {
         let instance_action: RelmAction<ChangeInstanceAction> = RelmAction::new_stateless(move |_| {
             instance_sender.input(AppMsg::ChooseInstance);
         });
+        let profile_sender = sender.clone();
+        let profile_action: RelmAction<ProfileAction> = RelmAction::new_stateless(move |_| {
+            let person = settings::get_current_account().name;
+            if !person.is_empty() { profile_sender.input(AppMsg::OpenPerson(person)); }
+        });
         let login_sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
             login_sender.input(AppMsg::ShowLogin);
@@ -304,6 +310,7 @@ impl SimpleComponent for App {
 
         let mut group = RelmActionGroup::<WindowActionGroup>::new();
         group.add_action(instance_action);
+        group.add_action(profile_action);
         group.add_action(login_action);
         group.add_action(logout_action);
         group.register_for_widget(&widgets.main_window);
@@ -416,6 +423,7 @@ impl SimpleComponent for App {
                                     let user = site.my_user.unwrap().local_user_view.person;
                                     account.name = user.name;
                                     account.id = user.id.0;
+                                    settings::update_current_account(account);
                                 }
                                 AppMsg::StartFetchPosts(None)
                             } else {
@@ -445,6 +453,7 @@ impl SimpleComponent for App {
 
 relm4::new_action_group!(WindowActionGroup, "win");
 relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance");
+relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
 relm4::new_stateless_action!(LogoutAction, WindowActionGroup, "logout");
 
