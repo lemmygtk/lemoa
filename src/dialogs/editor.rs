@@ -6,19 +6,22 @@ pub struct EditorData {
     pub name: String,
     pub body: String,
     pub url: Option<reqwest::Url>,
+    pub id: Option<i32>
 }
 
 pub struct EditorDialog {
-    type_: DialogType,
+    type_: EditorType,
     is_new: bool,
     visible: bool,
     name_buffer: gtk::EntryBuffer,
     url_buffer: gtk::EntryBuffer,
     body_buffer: gtk::TextBuffer,
+    // Optional field to temporarily store the post or comment id
+    id: Option<i32>
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum DialogType {
+pub enum EditorType {
     Post,
     Comment
 }
@@ -27,20 +30,20 @@ pub enum DialogType {
 pub enum DialogMsg {
     Show,
     Hide,
-    UpdateType(DialogType, bool),
+    UpdateType(EditorType, bool),
     UpdateData(EditorData),
     Okay
 }
 
 #[derive(Debug)]
 pub enum EditorOutput {
-    CreateRequest(EditorData),
-    EditRequest(EditorData)
+    CreateRequest(EditorData, EditorType),
+    EditRequest(EditorData, EditorType)
 }
 
 #[relm4::component(pub)]
 impl SimpleComponent for EditorDialog {
-    type Init = DialogType;
+    type Init = EditorType;
     type Input = DialogMsg;
     type Output = EditorOutput;
 
@@ -58,13 +61,13 @@ impl SimpleComponent for EditorDialog {
                 set_margin_all: 20,
 
                 match model.type_ {
-                    DialogType::Post => {
+                    EditorType::Post => {
                         gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
                             gtk::Label {
                                 set_halign: gtk::Align::Center,
                                 set_valign: gtk::Align::Center,
-                                set_label: "Create post",
+                                set_label: "Post content",
                                 add_css_class: "font-bold"
                             },
                             gtk::Entry {    
@@ -81,12 +84,12 @@ impl SimpleComponent for EditorDialog {
                             },
                         }
                     }
-                    DialogType::Comment => {
+                    EditorType::Comment => {
                         gtk::Box {
                             gtk::Label {
                                 set_halign: gtk::Align::Center,
                                 set_valign: gtk::Align::Center,
-                                set_label: "Create comment",
+                                set_label: "Comment content",
                                 add_css_class: "font-bold"
                             },
                         }
@@ -133,7 +136,7 @@ impl SimpleComponent for EditorDialog {
         let name_buffer = gtk::EntryBuffer::builder().build();
         let url_buffer = gtk::EntryBuffer::builder().build();
         let body_buffer = gtk::TextBuffer::builder().build();
-        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer };
+        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer, id: None };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -153,10 +156,10 @@ impl SimpleComponent for EditorDialog {
                 let (start, end) = &self.body_buffer.bounds();
                 let body = self.body_buffer.text(start, end, true).to_string();
                 let url = reqwest::Url::parse(&url).ok();
-                let post = EditorData { name, body, url };
+                let post = EditorData { name, body, url, id: self.id };
                 let message = match self.is_new {
-                    true => EditorOutput::CreateRequest(post),
-                    false => EditorOutput::EditRequest(post)
+                    true => EditorOutput::CreateRequest(post, self.type_),
+                    false => EditorOutput::EditRequest(post, self.type_)
                 };
                 let _ = sender.output(message);
                 self.visible = false;

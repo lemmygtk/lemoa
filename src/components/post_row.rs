@@ -104,7 +104,7 @@ impl FactoryComponent for PostRow {
                 },
                 gtk::Label {
                     set_halign: gtk::Align::Start,
-                    set_text: &format!("{} comments", self.post.clone().counts.comments),
+                    set_text: &format!("{} comments", self.post.counts.comments.clone()),
                 },
                 if self.post.creator.id.0 == settings::get_current_account().id {
                     gtk::Button {
@@ -126,9 +126,9 @@ impl FactoryComponent for PostRow {
     fn forward_to_parent(output: Self::Output) -> Option<Self::ParentInput> { Some(output) }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        let author_image= WebImage::builder().launch(get_web_image_url(value.creator.clone().avatar)).detach();
-        let community_image= WebImage::builder().launch(get_web_image_url(value.creator.clone().avatar)).detach();
-        let voting_row = VotingRowModel::builder().launch(VotingStats::from_post(value.clone().counts, value.my_vote)).detach();
+        let author_image= WebImage::builder().launch(get_web_image_url(value.creator.avatar.clone())).detach();
+        let community_image= WebImage::builder().launch(get_web_image_url(value.community.icon.clone())).detach();
+        let voting_row = VotingRowModel::builder().launch(VotingStats::from_post(value.counts.clone(), value.my_vote)).detach();
 
         Self { post: value, author_image, community_image, voting_row }
     }

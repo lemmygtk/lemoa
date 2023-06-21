@@ -1,4 +1,4 @@
-use crate::{util::markdown_to_pango_markup, dialogs::editor::{EditorDialog, DialogMsg, EditorOutput, DialogType, EditorData}};
+use crate::{util::markdown_to_pango_markup, dialogs::editor::{EditorDialog, DialogMsg, EditorOutput, EditorType, EditorData}};
 use lemmy_api_common::{lemmy_db_views::structs::PostView, lemmy_db_views_actor::structs::CommunityView, lemmy_db_schema::SubscribedType};
 use relm4::{prelude::*, factory::FactoryVecDeque, MessageBroker};
 use gtk::prelude::*;
@@ -58,7 +58,7 @@ impl SimpleComponent for CommunityPage {
                 },
                 gtk::Label {
                     #[watch]
-                    set_markup: &markdown_to_pango_markup(model.info.clone().community.description.unwrap_or("".to_string())),
+                    set_markup: &markdown_to_pango_markup(model.info.community.description.clone().unwrap_or("".to_string())),
                     set_use_markup: true,
                 },
                 gtk::Box {
@@ -124,9 +124,9 @@ impl SimpleComponent for CommunityPage {
 
         let dialog = EditorDialog::builder()
             .transient_for(root)
-            .launch_with_broker(DialogType::Post, &COMMUNITY_PAGE_BROKER)
+            .launch_with_broker(EditorType::Post, &COMMUNITY_PAGE_BROKER)
             .forward(sender.input_sender(),  |msg| match msg {
-                EditorOutput::CreateRequest(post) => CommunityInput::CreatePostRequest(post),
+                EditorOutput::CreateRequest(post, _) => CommunityInput::CreatePostRequest(post),
                 _ => CommunityInput::None
             });
 
