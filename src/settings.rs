@@ -4,10 +4,18 @@ use lemmy_api_common::sensitive::Sensitive;
 use serde::{Deserialize, Serialize};
 use crate::APP_ID;
 
+#[derive(Deserialize, Serialize, Default, Clone)]
+pub struct Account {
+    pub instance_url: String,
+    pub jwt: Option<Sensitive<String>>,
+    pub id: i32,
+    pub name: String,
+}
+
 #[derive(Deserialize, Serialize, Default)]
 pub struct Preferences {
-    pub instance_url: String,
-    pub jwt: Option<Sensitive<String>>
+    pub accounts: Vec<Account>,
+    pub current_account_index: u32
 }
 
 pub fn data_path() -> PathBuf {
@@ -32,4 +40,19 @@ pub fn get_prefs() -> Preferences {
         }
     }
     return Preferences::default();
+}
+
+pub fn get_current_account() -> Account {
+    let mut prefs = get_prefs();
+    if prefs.accounts.len() == 0 {
+        prefs.accounts.push(Account::default());
+        save_prefs(&prefs);
+    }
+    prefs.accounts[prefs.current_account_index as usize].clone()
+}
+
+pub fn update_current_account(account: Account) {
+    let mut settings = get_prefs();
+    settings.accounts[settings.current_account_index as usize] = account;
+    save_prefs(&settings);
 }

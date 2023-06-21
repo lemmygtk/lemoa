@@ -1,6 +1,6 @@
-use lemmy_api_common::{comment::{CommentResponse, CreateComment, CreateCommentLike}, lemmy_db_schema::newtypes::{PostId, CommentId}};
+use lemmy_api_common::{comment::{CommentResponse, CreateComment, CreateCommentLike, DeleteComment}, lemmy_db_schema::newtypes::{PostId, CommentId}};
 
-use crate::util;
+use crate::settings;
 
 
 pub fn create_comment(
@@ -12,7 +12,7 @@ pub fn create_comment(
         post_id: PostId(post_id),
         content,
         parent_id: parent_id.map(CommentId),
-        auth: util::get_auth_token().unwrap(),
+        auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::post("/comment", &params)
@@ -23,7 +23,16 @@ pub fn like_comment(comment_id: CommentId, score: i16) -> Result<CommentResponse
     let params = CreateCommentLike {
         comment_id,
         score,
-        auth: util::get_auth_token().unwrap(),
+        auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/comment/like", &params)
+}
+
+pub fn delete_comment(comment_id: CommentId) -> Result<CommentResponse, reqwest::Error> {
+    let params = DeleteComment {
+        comment_id,
+        deleted: true,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+    super::post("/comment/delete", &params)
 }

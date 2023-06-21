@@ -1,11 +1,11 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike, DeletePost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
 
-use crate::util;
+use crate::settings;
 
 pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
         id: Some(id),
-        auth: util::get_auth_token(),
+        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
@@ -17,7 +17,7 @@ pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error>
         post_id: Some(post_id),
         sort: Some(CommentSortType::Hot),
         type_: Some(ListingType::All),
-        auth: util::get_auth_token(),
+        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
@@ -42,7 +42,7 @@ pub fn create_post(
         name,
         body: Some(body),
         community_id: CommunityId(community_id),
-        auth: util::get_auth_token().unwrap(),
+        auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::post("/post", &params)
@@ -53,7 +53,16 @@ pub fn like_post(post_id: PostId, score: i16) -> Result<PostResponse, reqwest::E
     let params = CreatePostLike {
         post_id,
         score,
-        auth: util::get_auth_token().unwrap(),
+        auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/post/like", &params)
+}
+
+pub fn delete_post(post_id: PostId) -> Result<PostResponse, reqwest::Error> {
+    let params = DeletePost {
+        post_id,
+        deleted: true,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+    super::post("/post/delete", &params)
 }

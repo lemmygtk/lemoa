@@ -3,7 +3,8 @@ use relm4::prelude::*;
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::util::get_web_image_url;
+use crate::{util::get_web_image_url, api};
+use crate::settings;
 
 use super::voting_row::{VotingRowModel, VotingStats};
 
@@ -19,7 +20,8 @@ pub struct PostRow {
 pub enum PostViewMsg {
     OpenPost,
     OpenCommunity,
-    OpenPerson
+    OpenPerson,
+    DeletePost
 }
 
 #[relm4::factory(pub)]
@@ -104,6 +106,15 @@ impl FactoryComponent for PostRow {
                     set_halign: gtk::Align::Start,
                     set_text: &format!("{} comments", self.post.clone().counts.comments),
                 },
+                if self.post.creator.id.0 == settings::get_current_account().id {
+                    gtk::Button {
+                        set_icon_name: "edit-delete",
+                        connect_clicked => PostViewMsg::DeletePost,
+                        set_margin_start: 10,
+                    }
+                } else {
+                    gtk::Box {}
+                }
             },
 
             gtk::Separator {
@@ -146,6 +157,13 @@ impl FactoryComponent for PostRow {
             }
             PostViewMsg::OpenPost => {
                 sender.output(crate::AppMsg::OpenPost(self.post.post.id.clone()))
+            }
+            PostViewMsg::DeletePost => {
+                let post_id = self.post.post.id;
+                std::thread::spawn(move || {
+                    let _ = api::post::delete_post(post_id);
+                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None));
+                });
             }
         }
     }

@@ -1,6 +1,6 @@
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::settings::get_prefs;
+use crate::settings::get_current_account;
 
 pub mod communities;
 pub mod community;
@@ -11,6 +11,7 @@ pub mod user;
 pub mod auth;
 pub mod moderation;
 pub mod comment;
+pub mod site;
 
 static API_VERSION: &str = "v3";
 
@@ -22,7 +23,7 @@ pub static CLIENT: Lazy<Client> = Lazy::new(|| {
 });
 
 fn get_api_url() -> String {
-    format!("{}/api/{}", get_prefs().instance_url, API_VERSION).to_string()
+    format!("{}/api/{}", get_current_account().instance_url, API_VERSION).to_string()
 }
 
 fn get_url(path: &str) -> String {

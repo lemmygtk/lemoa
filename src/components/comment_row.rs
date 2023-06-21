@@ -3,8 +3,10 @@ use relm4::prelude::*;
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
+use crate::api;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
+use crate::settings;
 
 use super::voting_row::VotingRowModel;
 use super::voting_row::VotingStats;
@@ -19,6 +21,7 @@ pub struct CommentRow {
 #[derive(Debug)]
 pub enum CommentRowMsg {
     OpenPerson,
+    DeleteComment,
 }
 
 #[relm4::factory(pub)]
@@ -66,8 +69,21 @@ impl FactoryComponent for CommentRow {
                set_use_markup: true,
             },
 
-            #[local_ref]
-            voting_row -> gtk::Box {},
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                #[local_ref]
+                voting_row -> gtk::Box {},
+
+                if self.comment.creator.id.0 == settings::get_current_account().id {
+                    gtk::Button {
+                        set_icon_name: "edit-delete",
+                        connect_clicked => CommentRowMsg::DeleteComment,
+                        set_margin_start: 10,
+                    }
+                } else {
+                    gtk::Box {}
+                }
+            },
             
             gtk::Separator {}
         }
@@ -101,6 +117,13 @@ impl FactoryComponent for CommentRow {
         match message {
             CommentRowMsg::OpenPerson => {
                 sender.output(crate::AppMsg::OpenPerson(self.comment.creator.name.clone()))
+            }
+            CommentRowMsg::DeleteComment => {
+                let comment_id = self.comment.comment.id;
+                std::thread::spawn(move || {
+                    let _ = api::comment::delete_comment(comment_id);
+                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None));
+                });
             }
         }
     }

@@ -265,7 +265,7 @@ impl SimpleComponent for App {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let instance_url = settings::get_prefs().instance_url;
+        let instance_url = settings::get_current_account().instance_url;
         let state = if instance_url.is_empty() { AppState::ChooseInstance } else { AppState::Loading };
 
         // initialize all controllers and factories
@@ -315,9 +315,9 @@ impl SimpleComponent for App {
         match msg {
             AppMsg::DoneChoosingInstance(instance_url) => {
                 if instance_url.trim().is_empty() { return; }
-                let mut preferences = settings::get_prefs();
-                preferences.instance_url = instance_url;
-                settings::save_prefs(&preferences);
+                let mut current_account = settings::get_current_account();
+                current_account.instance_url = instance_url;
+                settings::update_current_account(current_account);
                 self.state = AppState::Loading;
                 sender.input(AppMsg::StartFetchPosts(None));
             }
@@ -409,7 +409,14 @@ impl SimpleComponent for App {
                     let message = match api::auth::login(username, password) {
                         Ok(login) => {
                             if let Some(token) = login.jwt {
-                                util::set_auth_token(Some(token));
+                                let mut account = settings::get_current_account();
+                                account.jwt = Some(token);
+                                settings::update_current_account(account.clone());
+                                if let Ok(site) = api::site::fetch_site() {
+                                    let user = site.my_user.unwrap().local_user_view.person;
+                                    account.name = user.name;
+                                    account.id = user.id.0;
+                                }
                                 AppMsg::StartFetchPosts(None)
                             } else {
                                 AppMsg::ShowMessage("Wrong credentials!".to_string())
@@ -421,7 +428,9 @@ impl SimpleComponent for App {
                 });
             }
             AppMsg::Logout => {
-                util::set_auth_token(None);
+                let mut account = settings::get_current_account();
+                account.jwt = None;
+                settings::update_current_account(account);
             }
             AppMsg::ShowMessage(message) => {
                 self.message = Some(message);

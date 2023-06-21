@@ -1,11 +1,11 @@
 use lemmy_api_common::{community::{GetCommunity, GetCommunityResponse, CommunityResponse, FollowCommunity}, lemmy_db_schema::newtypes::CommunityId};
 
-use crate::util;
+use crate::settings;
 
 pub fn get_community(name: String) -> std::result::Result<GetCommunityResponse, reqwest::Error> {
     let params = GetCommunity {
         name: Some(name),
-        auth: util::get_auth_token(),
+        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
@@ -19,7 +19,7 @@ pub fn follow_community(
     let params = FollowCommunity {
         community_id: CommunityId(community_id),
         follow,
-        auth: util::get_auth_token().unwrap(),
+        auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/community/follow", &params)
 }

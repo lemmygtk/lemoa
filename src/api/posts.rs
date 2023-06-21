@@ -1,13 +1,13 @@
 use lemmy_api_common::{post::{GetPostsResponse, GetPosts}, lemmy_db_views::structs::PostView, lemmy_db_schema::ListingType};
 
-use crate::util;
+use crate::settings;
 
 pub fn list_posts(page: i64, community_name: Option<String>, listing_type: Option<ListingType>) -> std::result::Result<Vec<PostView>, reqwest::Error> {
     let params = GetPosts {
         page: Some(page),
         type_: listing_type,
         community_name,
-        auth: util::get_auth_token(),
+        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 

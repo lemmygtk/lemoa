@@ -3,7 +3,7 @@ use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::create_post::{CreatePostDialog, CreatePostDialogOutput, DialogMsg, CREATE_COMMENT_DIALOG_BROKER, DialogType}};
+use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::create_post::{CreatePostDialog, CreatePostDialogOutput, DialogMsg, CREATE_COMMENT_DIALOG_BROKER, DialogType}, settings};
 
 use super::{comment_row::CommentRow, voting_row::{VotingRowModel, VotingStats, VotingRowInput}};
 
@@ -27,7 +27,9 @@ pub enum PostInput {
     OpenLink,
     OpenCreateCommentDialog,
     CreateCommentRequest(String),
-    CreatedComment(CommentView)
+    CreatedComment(CommentView),
+    DeletePost,
+    EditPost,
 }
 
 #[relm4::component(pub)]
@@ -114,6 +116,16 @@ impl SimpleComponent for PostPage {
                     gtk::Button {
                         set_label: "View",
                         connect_clicked => PostInput::OpenLink,
+                    },
+
+                    if model.info.post_view.creator.id.0 == settings::get_current_account().id {
+                        gtk::Button {
+                            set_icon_name: "edit-delete",
+                            connect_clicked => PostInput::DeletePost,
+                            set_margin_start: 10,
+                        }
+                    } else {
+                        gtk::Box {}
                     }
                 },
 
@@ -236,6 +248,16 @@ impl SimpleComponent for PostPage {
                     };
                     if message.is_some() { sender.input(message.unwrap()) };
                 });
+            }
+            PostInput::DeletePost => {
+                let post_id = self.info.post_view.post.id;
+                std::thread::spawn(move || {
+                    let _ = api::post::delete_post(post_id);
+                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None));
+                });
+            }
+            PostInput::EditPost => {
+
             }
         }
     }

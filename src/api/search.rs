@@ -1,6 +1,6 @@
 use lemmy_api_common::{site::{SearchResponse, Search}, lemmy_db_schema::{SortType, SearchType}};
 
-use crate::util;
+use crate::settings;
 
 pub fn fetch_search(page: i64, query: String, search_type: Option<SearchType>) -> std::result::Result<SearchResponse, reqwest::Error> {
     let params = Search {
@@ -8,7 +8,7 @@ pub fn fetch_search(page: i64, query: String, search_type: Option<SearchType>) -
         sort: Some(SortType::TopMonth),
         page: Some(page),
         type_: search_type,
-        auth: util::get_auth_token(),
+        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
