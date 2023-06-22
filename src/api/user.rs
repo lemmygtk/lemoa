@@ -25,7 +25,7 @@ pub fn get_mentions(page: i64, unread_only: bool) -> std::result::Result<GetPers
         sort: Some(CommentSortType::New),
         ..Default::default()
     };
-    super::get("/user/mentions", &params)
+    super::get("/user/mention", &params)
 }
 
 pub fn get_replies(page: i64, unread_only: bool) -> std::result::Result<GetRepliesResponse, reqwest::Error> {

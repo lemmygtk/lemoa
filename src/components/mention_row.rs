@@ -41,6 +41,7 @@ impl FactoryComponent for MentionRow {
             set_margin_end: 10,
             set_margin_start: 10,
             set_margin_top: 10,
+            set_vexpand: false,
 
             gtk::Label {
                 set_label: &self.comment.post.name,

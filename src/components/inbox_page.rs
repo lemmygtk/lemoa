@@ -92,6 +92,7 @@ impl SimpleComponent for InboxPage {
                     let comments = match type_ {
                         InboxType::Mentions => {
                             if let Ok(response) = api::user::get_mentions(page, unread_only) {
+                                // It's just a different object, but its contents are exactly the same
                                 let serialised = serde_json::to_string(&response.mentions).unwrap();
                                 serde_json::from_str(&serialised).ok()
                             } else { None }
@@ -116,6 +117,7 @@ impl SimpleComponent for InboxPage {
                 sender.input(InboxInput::FetchInbox);
             }
             InboxInput::UpdateInbox(comments) => {
+                self.mentions.guard().clear();
                 for comment in comments {
                     self.mentions.guard().push_back(comment);
                 }
