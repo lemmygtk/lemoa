@@ -38,6 +38,8 @@ struct App {
     post_page: Controller<PostPage>,
     inbox_page: Controller<InboxPage>,
     logged_in: bool,
+    current_communities_type: Option<ListingType>,
+    current_posts_type: Option<ListingType>,
 }
 
 #[derive(Debug, Clone)]
@@ -53,7 +55,7 @@ pub enum AppMsg {
     StartFetchPosts(Option<ListingType>),
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
-    ViewCommunities(Option<String>),
+    ViewCommunities(Option<String>, Option<ListingType>),
     OpenCommunity(String),
     DoneFetchCommunity(GetCommunityResponse),
     OpenPerson(String),
@@ -82,16 +84,22 @@ impl SimpleComponent for App {
                     set_menu_model: Some(&menu_model),
                 },
                 pack_start = &gtk::Button {
-                    set_label: "Recommended",
+                    set_label: "Home",
                     connect_clicked => AppMsg::StartFetchPosts(None),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Communities",
-                    connect_clicked => AppMsg::ViewCommunities(None),
+                    connect_clicked => AppMsg::ViewCommunities(None, None),
                 },
                 pack_start = &gtk::Button {
-                    set_label: "Subscribed",
+                    set_label: "Recommended",
                     connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed)),
+                    #[watch]
+                    set_visible: model.logged_in,
+                },
+                pack_start = &gtk::Button {
+                    set_label: "Joined",
+                    connect_clicked => AppMsg::ViewCommunities(None, Some(ListingType::Subscribed)),
                     #[watch]
                     set_visible: model.logged_in,
                 },
@@ -215,7 +223,7 @@ impl SimpleComponent for App {
                                     set_label: "Search",
                                     connect_clicked[sender, community_search_query] => move |_| {
                                         let text = community_search_query.text().as_str().to_string();
-                                        sender.input(AppMsg::ViewCommunities(Some(text)));
+                                        sender.input(AppMsg::ViewCommunities(Some(text), model.current_communities_type));
                                     },
                                 }
                             },
@@ -298,7 +306,7 @@ impl SimpleComponent for App {
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
         let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
         
-        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None };
+        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None };
 
         // fetch posts if that's the initial page
         if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
@@ -355,6 +363,7 @@ impl SimpleComponent for App {
                 self.state = AppState::ChooseInstance;
             }
             AppMsg::StartFetchPosts(type_) => {
+                self.current_posts_type = type_;
                 std::thread::spawn(move || {
                     let message = match api::posts::list_posts(1, None, type_) {
                         Ok(posts) => AppMsg::DoneFetchPosts(posts),
@@ -370,11 +379,11 @@ impl SimpleComponent for App {
                     self.posts.guard().push_back(post);
                 }
             }
-            AppMsg::ViewCommunities(query) => {
+            AppMsg::ViewCommunities(query, listing_type) => {
                 self.state = AppState::Communities;
-                if (query.is_none() || query.clone().unwrap().trim().is_empty()) && !self.communities.is_empty() { return; }
+                self.current_communities_type = listing_type;
                 std::thread::spawn(move || {
-                    let message = match api::communities::fetch_communities(1, query) {
+                    let message = match api::communities::fetch_communities(1, query, listing_type) {
                         Ok(communities) => AppMsg::DoneFetchCommunities(communities),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };

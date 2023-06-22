@@ -1,11 +1,12 @@
-use lemmy_api_common::{community::{ListCommunities, ListCommunitiesResponse}, lemmy_db_schema::{SortType, SearchType}, lemmy_db_views_actor::structs::CommunityView};
+use lemmy_api_common::{community::{ListCommunities, ListCommunitiesResponse}, lemmy_db_schema::{SortType, SearchType, ListingType}, lemmy_db_views_actor::structs::CommunityView};
 
 use crate::settings;
 use super::search;
 
-pub fn fetch_communities(page: i64, query: Option<String>) -> std::result::Result<Vec<CommunityView>, reqwest::Error> {
+pub fn fetch_communities(page: i64, query: Option<String>,listing_type: Option<ListingType>) -> std::result::Result<Vec<CommunityView>, reqwest::Error> {
     if query.is_none() || query.clone().unwrap().trim().is_empty() {
         let params = ListCommunities {
+            type_: listing_type,
             sort: Some(SortType::TopMonth),
             page: Some(page),
             auth: settings::get_current_account().jwt,
