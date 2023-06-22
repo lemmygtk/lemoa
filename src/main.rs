@@ -5,7 +5,7 @@ pub mod util;
 pub mod dialogs;
 
 use api::{user::default_person, community::default_community, post::default_post};
-use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}};
+use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::InboxPage};
 use gtk::prelude::*;
 use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::PostId, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
@@ -22,7 +22,8 @@ enum AppState {
     Person,
     Post,
     Login,
-    Message
+    Message,
+    Inbox
 }
 
 struct App {
@@ -33,7 +34,8 @@ struct App {
     communities: FactoryVecDeque<CommunityRow>,
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
-    post_page: Controller<PostPage>
+    post_page: Controller<PostPage>,
+    inbox_page: Controller<InboxPage>
 }
 
 #[derive(Debug, Clone)]
@@ -54,7 +56,8 @@ pub enum AppMsg {
     OpenPerson(String),
     DoneFetchPerson(GetPersonDetailsResponse),
     OpenPost(PostId),
-    DoneFetchPost(GetPostResponse)
+    DoneFetchPost(GetPostResponse),
+    OpenInbox
 }
 
 #[relm4::component]
@@ -82,6 +85,10 @@ impl SimpleComponent for App {
                 pack_start = &gtk::Button {
                     set_label: "Subscribed",
                     connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed)),
+                },
+                pack_start = &gtk::Button {
+                    set_label: "Inbox",
+                    connect_clicked => AppMsg::OpenInbox,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Communities",
@@ -247,6 +254,12 @@ impl SimpleComponent for App {
                         }
                     }
                 }
+                AppState::Inbox => {
+                    gtk::ScrolledWindow {
+                        #[local_ref]
+                        inbox_page -> gtk::Box {}
+                    }
+                }
             }
         }
     }
@@ -275,8 +288,9 @@ impl SimpleComponent for App {
         let profile_page = ProfilePage::builder().launch(default_person()).forward(sender.input_sender(), |msg| msg);
         let community_page = CommunityPage::builder().launch(default_community().community_view).forward(sender.input_sender(), |msg| msg);
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
+        let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
         
-        let model = App { state, posts, communities, profile_page, community_page, post_page, message: None, latest_action: None };
+        let model = App { state, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None };
 
         // fetch posts if that's the initial page
         if !instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
@@ -287,6 +301,7 @@ impl SimpleComponent for App {
         let profile_page = model.profile_page.widget();
         let community_page = model.community_page.widget();
         let post_page = model.post_page.widget();
+        let inbox_page = model.inbox_page.widget();
         
         let widgets = view_output!();
 
@@ -446,6 +461,9 @@ impl SimpleComponent for App {
             }
             AppMsg::Retry => {
                 sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts(None)));
+            }
+            AppMsg::OpenInbox => {
+                self.state = AppState::Inbox;
             }
         }
     }
