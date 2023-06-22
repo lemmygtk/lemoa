@@ -24,7 +24,8 @@ pub enum InboxInput {
     UpdateType(InboxType),
     ToggleUnreadState,
     FetchInbox,
-    UpdateInbox(Vec<CommentReplyView>)
+    UpdateInbox(Vec<CommentReplyView>),
+    MarkAllAsRead,
 }
 
 #[relm4::component(pub)]
@@ -53,6 +54,10 @@ impl SimpleComponent for InboxPage {
                     set_label: "Show unread only",
                     connect_clicked => InboxInput::ToggleUnreadState,
                 },
+                gtk::Button {
+                    set_label: "Mark all as read",
+                    connect_clicked => InboxInput::MarkAllAsRead,
+                }
             },
             gtk::ScrolledWindow {
                 #[local_ref]
@@ -114,6 +119,14 @@ impl SimpleComponent for InboxPage {
                 for comment in comments {
                     self.mentions.guard().push_back(comment);
                 }
+            }
+            InboxInput::MarkAllAsRead => {
+                let show_unread_only = self.unread_only.clone();
+                std::thread::spawn(move || {
+                    if api::user::mark_all_as_read().is_ok() && show_unread_only {
+                        sender.input(InboxInput::UpdateInbox(vec![]));
+                    }
+                });
             }
         }
     }
