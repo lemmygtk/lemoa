@@ -161,10 +161,14 @@ impl SimpleComponent for PostPage {
                         #[watch]
                         set_text: &format!("{} comments", model.info.post_view.counts.comments),
                     },
-                    gtk::Button {
-                        set_label: "Comment",
-                        set_margin_start: 10,
-                        connect_clicked => PostInput::OpenCreateCommentDialog,
+                    if settings::get_current_account().jwt.is_some() {
+                        gtk::Button {
+                            set_label: "Comment",
+                            set_margin_start: 10,
+                            connect_clicked => PostInput::OpenCreateCommentDialog,
+                        }
+                    } else {
+                        gtk::Box {}
                     }
                 },
 

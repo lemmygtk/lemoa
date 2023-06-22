@@ -73,6 +73,7 @@ impl SimpleComponent for VotingRowModel {
             gtk::ToggleButton {
                 set_icon_name: "go-up",
                 connect_clicked => VotingRowInput::Vote(1),
+                #[watch]
                 set_active: model.stats.own_vote == Some(1),
             },
             gtk::Label {
@@ -84,6 +85,7 @@ impl SimpleComponent for VotingRowModel {
             gtk::ToggleButton {
                 set_icon_name: "go-down",
                 connect_clicked => VotingRowInput::Vote(-1),
+                #[watch]
                 set_active: model.stats.own_vote == Some(-1),
             }
         }

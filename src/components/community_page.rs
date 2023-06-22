@@ -4,7 +4,7 @@ use relm4::{prelude::*, factory::FactoryVecDeque, MessageBroker};
 use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::get_web_image_msg};
+use crate::{api, util::get_web_image_msg, settings};
 
 use super::post_row::PostRow;
 
@@ -96,10 +96,14 @@ impl SimpleComponent for CommunityPage {
                         set_margin_start: 10,
                     },
 
-                    gtk::Button {
-                        set_label: "Create post",
-                        set_margin_start: 10,
-                        connect_clicked => CommunityInput::OpenCreatePostDialog,
+                    if settings::get_current_account().jwt.is_some() {
+                        gtk::Button {
+                            set_label: "Create post",
+                            set_margin_start: 10,
+                            connect_clicked => CommunityInput::OpenCreatePostDialog,
+                        }
+                    } else {
+                        gtk::Box {}
                     }
                 },
 

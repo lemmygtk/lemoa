@@ -9,6 +9,7 @@ use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{
 use gtk::prelude::*;
 use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::PostId, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
+use settings::get_current_account;
 
 static APP_ID: &str = "com.lemmy-gtk.lemoa";
 
@@ -35,7 +36,8 @@ struct App {
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
     post_page: Controller<PostPage>,
-    inbox_page: Controller<InboxPage>
+    inbox_page: Controller<InboxPage>,
+    logged_in: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -43,6 +45,7 @@ pub enum AppMsg {
     ChooseInstance,
     ShowLogin,
     Login(String, String),
+    LoggedIn,
     Logout,
     Retry,
     ShowMessage(String),
@@ -83,16 +86,20 @@ impl SimpleComponent for App {
                     connect_clicked => AppMsg::StartFetchPosts(None),
                 },
                 pack_start = &gtk::Button {
+                    set_label: "Communities",
+                    connect_clicked => AppMsg::ViewCommunities(None),
+                },
+                pack_start = &gtk::Button {
                     set_label: "Subscribed",
                     connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed)),
+                    #[watch]
+                    set_visible: model.logged_in,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Inbox",
                     connect_clicked => AppMsg::OpenInbox,
-                },
-                pack_start = &gtk::Button {
-                    set_label: "Communities",
-                    connect_clicked => AppMsg::ViewCommunities(None),
+                    #[watch]
+                    set_visible: model.logged_in,
                 },
             },
 
@@ -279,8 +286,9 @@ impl SimpleComponent for App {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let instance_url = settings::get_current_account().instance_url;
-        let state = if instance_url.is_empty() { AppState::ChooseInstance } else { AppState::Loading };
+        let current_account = settings::get_current_account();
+        let state = if current_account.instance_url.is_empty() { AppState::ChooseInstance } else { AppState::Loading };
+        let logged_in = current_account.jwt.is_some();
 
         // initialize all controllers and factories
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
@@ -290,10 +298,10 @@ impl SimpleComponent for App {
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
         let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
         
-        let model = App { state, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None };
+        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None };
 
         // fetch posts if that's the initial page
-        if !instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
+        if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
 
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
@@ -320,7 +328,7 @@ impl SimpleComponent for App {
             login_sender.input(AppMsg::ShowLogin);
         });
         let logout_action: RelmAction<LogoutAction> = RelmAction::new_stateless(move |_| {
-            sender.input(AppMsg::ChooseInstance);
+            sender.input(AppMsg::Logout);
         });
 
         let mut group = RelmActionGroup::<WindowActionGroup>::new();
@@ -426,6 +434,7 @@ impl SimpleComponent for App {
                 self.state = AppState::Login;
             }
             AppMsg::Login(username, password) => {
+                if get_current_account().instance_url.is_empty() { return; }
                 self.state = AppState::Loading;
                 std::thread::spawn(move || {
                     let message = match api::auth::login(username, password) {
@@ -440,7 +449,7 @@ impl SimpleComponent for App {
                                     account.id = user.id.0;
                                     settings::update_current_account(account);
                                 }
-                                AppMsg::StartFetchPosts(None)
+                                AppMsg::LoggedIn
                             } else {
                                 AppMsg::ShowMessage("Wrong credentials!".to_string())
                             }
@@ -454,6 +463,7 @@ impl SimpleComponent for App {
                 let mut account = settings::get_current_account();
                 account.jwt = None;
                 settings::update_current_account(account);
+                self.logged_in = false;
             }
             AppMsg::ShowMessage(message) => {
                 self.message = Some(message);
@@ -464,6 +474,10 @@ impl SimpleComponent for App {
             }
             AppMsg::OpenInbox => {
                 self.state = AppState::Inbox;
+            }
+            AppMsg::LoggedIn => {
+                self.logged_in = true;
+                sender.input(AppMsg::StartFetchPosts(None));
             }
         }
     }
