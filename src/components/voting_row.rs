@@ -2,7 +2,7 @@ use lemmy_api_common::{lemmy_db_schema::{aggregates::structs::{PostAggregates, C
 use relm4::{SimpleComponent, ComponentParts, gtk};
 use gtk::prelude::*;
 
-use crate::api;
+use crate::{api, settings};
 
 #[derive(Default, Debug, Clone)]
 pub struct VotingStats {
@@ -70,17 +70,10 @@ impl SimpleComponent for VotingRowModel {
         gtk::Box {
             set_orientation: gtk::Orientation::Horizontal,
 
-            if model.stats.own_vote == Some(1) {
-                gtk::Button {
-                    set_icon_name: "go-up",
-                    connect_clicked => VotingRowInput::Vote(0),
-                    add_css_class: "suggested-action",
-                }
-            } else {
-                gtk::Button {
-                    set_icon_name: "go-up",
-                    connect_clicked => VotingRowInput::Vote(1)
-                }
+            gtk::ToggleButton {
+                set_icon_name: "go-up",
+                connect_clicked => VotingRowInput::Vote(1),
+                set_active: model.stats.own_vote == Some(1),
             },
             gtk::Label {
                 #[watch]
@@ -88,18 +81,11 @@ impl SimpleComponent for VotingRowModel {
                 set_margin_start: 10,
                 set_margin_end: 10,
             },
-            if model.stats.own_vote == Some(-1) {
-                gtk::Button {
-                    set_icon_name: "go-down",
-                    connect_clicked => VotingRowInput::Vote(0),
-                    add_css_class: "suggested-action",
-                }
-            } else {
-                gtk::Button {
-                    set_icon_name: "go-down",
-                    connect_clicked => VotingRowInput::Vote(-1)
-                }
-            },
+            gtk::ToggleButton {
+                set_icon_name: "go-down",
+                connect_clicked => VotingRowInput::Vote(-1),
+                set_active: model.stats.own_vote == Some(-1),
+            }
         }
     }
 
@@ -115,7 +101,10 @@ impl SimpleComponent for VotingRowModel {
 
     fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
         match message {
-            VotingRowInput::Vote(score) => {
+            VotingRowInput::Vote(vote) => {
+                let mut score = self.stats.own_vote.unwrap_or(0) + vote;
+                if score < -1 || score > 1 { score = 0 };
+                if settings::get_current_account().jwt.is_none() { return; }
                 let stats = self.stats.clone();
                 std::thread::spawn(move || {
                     let info = if stats.post_id.is_some() {
