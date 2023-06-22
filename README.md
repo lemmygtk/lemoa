@@ -20,6 +20,7 @@ Working:
 - Following communities
 - Voting for or against posts or comments
 - Editing and deleting posts or comments
+- Viewing the personal inbox (mentions, replies)
 
 Not yet working, but planned to be added soon:
 
