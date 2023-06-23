@@ -137,7 +137,7 @@ impl FactoryComponent for CommentRow {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    let _ = sender.output(PostInput::PassAppMessage(crate::AppMsg::StartFetchPosts(None)));
+                    let _ = sender.output(PostInput::PassAppMessage(crate::AppMsg::StartFetchPosts(None, true)));
                 });
             }
             CommentRowMsg::OpenEditCommentDialog => {

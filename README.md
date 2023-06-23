@@ -22,9 +22,8 @@ Working:
 - Editing and deleting posts or comments
 - Viewing the personal inbox (mentions, replies)
 
-Not yet working, but planned to be added soon:
+Not yet supported:
 
-- Viewing the next pages of posts or communities
 - Private messages
 
 # Build dependencies

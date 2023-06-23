@@ -16,11 +16,13 @@ pub struct CommunityPage {
     posts: FactoryVecDeque<PostRow>,
     #[allow(dead_code)]
     create_post_dialog: Controller<EditorDialog>,
+    current_posts_page: i64
 }
 
 #[derive(Debug)]
 pub enum CommunityInput {
     UpdateCommunity(CommunityView),
+    FetchPosts,
     DoneFetchPosts(Vec<PostView>),
     OpenCreatePostDialog,
     CreatePostRequest(EditorData),
@@ -112,6 +114,12 @@ impl SimpleComponent for CommunityPage {
                 #[local_ref]
                 posts -> gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
+                },
+
+                gtk::Button {
+                    set_label: "More",
+                    set_margin_all: 10,
+                    connect_clicked => CommunityInput::FetchPosts,
                 }
             }
 
@@ -134,7 +142,7 @@ impl SimpleComponent for CommunityPage {
                 _ => CommunityInput::None
             });
 
-        let model = CommunityPage { info: init, avatar, posts, create_post_dialog: dialog };
+        let model = CommunityPage { info: init, avatar, posts, create_post_dialog: dialog, current_posts_page: 0 };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -148,10 +156,16 @@ impl SimpleComponent for CommunityPage {
                 self.info = community.clone();
                 self.avatar.emit(get_web_image_msg(community.community.icon));
                 self.posts.guard().clear();
-
+                self.current_posts_page = 0;
+                if community.counts.posts == 0 { return; }
+                sender.input(CommunityInput::FetchPosts);
+            }
+            CommunityInput::FetchPosts => {
+                let name = self.info.community.name.clone();
+                self.current_posts_page += 1;
+                let page = self.current_posts_page;
                 std::thread::spawn(move || {
-                    if community.counts.posts == 0 { return; }
-                    let community_posts = api::posts::list_posts(1, Some(community.community.name), None);
+                    let community_posts = api::posts::list_posts(page, Some(name), None);
                     if let Ok(community_posts) = community_posts {
                         sender.input(CommunityInput::DoneFetchPosts(community_posts));
                     }

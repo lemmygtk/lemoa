@@ -40,6 +40,9 @@ struct App {
     logged_in: bool,
     current_communities_type: Option<ListingType>,
     current_posts_type: Option<ListingType>,
+    current_communities_page: i64,
+    current_posts_page: i64,
+    community_search_buffer: gtk::EntryBuffer,
 }
 
 #[derive(Debug, Clone)]
@@ -52,10 +55,10 @@ pub enum AppMsg {
     Retry,
     ShowMessage(String),
     DoneChoosingInstance(String),
-    StartFetchPosts(Option<ListingType>),
+    StartFetchPosts(Option<ListingType>, bool),
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
-    ViewCommunities(Option<String>, Option<ListingType>),
+    FetchCommunities(Option<ListingType>, bool),
     OpenCommunity(String),
     DoneFetchCommunity(GetCommunityResponse),
     OpenPerson(String),
@@ -85,21 +88,21 @@ impl SimpleComponent for App {
                 },
                 pack_start = &gtk::Button {
                     set_label: "Home",
-                    connect_clicked => AppMsg::StartFetchPosts(None),
+                    connect_clicked => AppMsg::StartFetchPosts(None, true),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Communities",
-                    connect_clicked => AppMsg::ViewCommunities(None, None),
+                    connect_clicked => AppMsg::FetchCommunities(None, true),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Recommended",
-                    connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed)),
+                    connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed), true),
                     #[watch]
                     set_visible: model.logged_in,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Joined",
-                    connect_clicked => AppMsg::ViewCommunities(None, Some(ListingType::Subscribed)),
+                    connect_clicked => AppMsg::FetchCommunities(Some(ListingType::Subscribed), true),
                     #[watch]
                     set_visible: model.logged_in,
                 },
@@ -113,13 +116,22 @@ impl SimpleComponent for App {
 
             match model.state {
                 AppState::Posts => gtk::ScrolledWindow {
-                    set_vexpand: true,
                     set_hexpand: true,
                     
-                    #[local_ref]
-                    posts_box -> gtk::Box {
+                    gtk::Box {
                         set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: 5,
+                        
+                        #[local_ref]
+                        posts_box -> gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                            set_spacing: 5,
+                        },
+
+                        gtk::Button {
+                            set_label: "More",
+                            connect_clicked => AppMsg::StartFetchPosts(model.current_posts_type, false),
+                            set_margin_all: 10,
+                        }
                     }
                 },
                 AppState::Loading => gtk::Box {
@@ -186,7 +198,7 @@ impl SimpleComponent for App {
 
                         gtk::Button {
                             set_label: "Cancel",
-                            connect_clicked => AppMsg::StartFetchPosts(None),
+                            connect_clicked => AppMsg::StartFetchPosts(None, true),
                             set_margin_end: 10,
                         },
                         gtk::Button {
@@ -213,7 +225,6 @@ impl SimpleComponent for App {
                             gtk::Box {
                                 set_margin_all: 10,
 
-                                #[name(community_search_query)]
                                 gtk::Entry {
                                     set_hexpand: true,
                                     set_tooltip_text: Some("Search"),
@@ -221,10 +232,7 @@ impl SimpleComponent for App {
                                 },
                                 gtk::Button {
                                     set_label: "Search",
-                                    connect_clicked[sender, community_search_query] => move |_| {
-                                        let text = community_search_query.text().as_str().to_string();
-                                        sender.input(AppMsg::ViewCommunities(Some(text), model.current_communities_type));
-                                    },
+                                    connect_clicked => AppMsg::FetchCommunities(model.current_communities_type, true),
                                 }
                             },
 
@@ -232,6 +240,12 @@ impl SimpleComponent for App {
                             communities_box -> gtk::Box {
                                 set_orientation: gtk::Orientation::Vertical,
                                 set_spacing: 5,
+                            },
+
+                            gtk::Button {
+                                set_label: "More",
+                                connect_clicked => AppMsg::FetchCommunities(model.current_communities_type, false),
+                                set_margin_all: 10,
                             }
                         }
                     }
@@ -305,11 +319,12 @@ impl SimpleComponent for App {
         let community_page = CommunityPage::builder().launch(default_community().community_view).forward(sender.input_sender(), |msg| msg);
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
         let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
-        
-        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None };
+        let community_search_buffer = gtk::EntryBuffer::builder().build();
+
+        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None, current_communities_page: 1, current_posts_page: 1, community_search_buffer };
 
         // fetch posts if that's the initial page
-        if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
+        if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None, true)) };
 
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
@@ -357,15 +372,17 @@ impl SimpleComponent for App {
                 current_account.instance_url = instance_url;
                 settings::update_current_account(current_account);
                 self.state = AppState::Loading;
-                sender.input(AppMsg::StartFetchPosts(None));
+                sender.input(AppMsg::StartFetchPosts(None, true));
             }
             AppMsg::ChooseInstance => {
                 self.state = AppState::ChooseInstance;
             }
-            AppMsg::StartFetchPosts(type_) => {
+            AppMsg::StartFetchPosts(type_, remove_previous) => {
                 self.current_posts_type = type_;
+                let page = if remove_previous { 1 } else { self.current_posts_page + 1 };
+                self.current_posts_page = page;
                 std::thread::spawn(move || {
-                    let message = match api::posts::list_posts(1, None, type_) {
+                    let message = match api::posts::list_posts(page, None, type_) {
                         Ok(posts) => AppMsg::DoneFetchPosts(posts),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };
@@ -374,16 +391,20 @@ impl SimpleComponent for App {
             }
             AppMsg::DoneFetchPosts(posts) => {
                 self.state = AppState::Posts;
-                self.posts.guard().clear();
+                if self.current_posts_page == 1 { self.posts.guard().clear(); }
                 for post in posts {
                     self.posts.guard().push_back(post);
                 }
             }
-            AppMsg::ViewCommunities(query, listing_type) => {
+            AppMsg::FetchCommunities(listing_type, remove_previous) => {
+                let query_text = self.community_search_buffer.text().as_str().to_owned();
+                let query = if query_text.is_empty() { None } else { Some(query_text) };
                 self.state = AppState::Communities;
+                let page = if remove_previous { 1 } else { self.current_communities_page + 1 };
+                self.current_communities_page = page;
                 self.current_communities_type = listing_type;
                 std::thread::spawn(move || {
-                    let message = match api::communities::fetch_communities(1, query, listing_type) {
+                    let message = match api::communities::fetch_communities(page, query, listing_type) {
                         Ok(communities) => AppMsg::DoneFetchCommunities(communities),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };
@@ -392,7 +413,7 @@ impl SimpleComponent for App {
             }
             AppMsg::DoneFetchCommunities(communities) => {
                 self.state = AppState::Communities;
-                self.communities.guard().clear();
+                if self.current_communities_page == 1 { self.communities.guard().clear(); }
                 for community in communities {
                     self.communities.guard().push_back(community);
                 }
@@ -479,14 +500,14 @@ impl SimpleComponent for App {
                 self.state = AppState::Message;
             }
             AppMsg::Retry => {
-                sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts(None)));
+                sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts(None, true)));
             }
             AppMsg::OpenInbox => {
                 self.state = AppState::Inbox;
             }
             AppMsg::LoggedIn => {
                 self.logged_in = true;
-                sender.input(AppMsg::StartFetchPosts(None));
+                sender.input(AppMsg::StartFetchPosts(None, true));
             }
         }
     }
