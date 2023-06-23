@@ -78,7 +78,6 @@ impl SimpleComponent for InboxPage {
         let model = Self { mentions, page: 1, unread_only: false, type_: InboxType::Mentions };
         let mentions = model.mentions.widget();
         let widgets = view_output!();
-        sender.input(InboxInput::FetchInbox);
         ComponentParts { model, widgets }
     }
 

@@ -5,7 +5,7 @@ pub mod util;
 pub mod dialogs;
 
 use api::{user::default_person, community::default_community, post::default_post};
-use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::InboxPage};
+use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}};
 use gtk::prelude::*;
 use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::PostId, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
@@ -120,7 +120,7 @@ impl SimpleComponent for App {
                     
                     gtk::Box {
                         set_orientation: gtk::Orientation::Vertical,
-                        
+
                         #[local_ref]
                         posts_box -> gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
@@ -504,6 +504,7 @@ impl SimpleComponent for App {
             }
             AppMsg::OpenInbox => {
                 self.state = AppState::Inbox;
+                self.inbox_page.sender().emit(InboxInput::FetchInbox);
             }
             AppMsg::LoggedIn => {
                 self.logged_in = true;
