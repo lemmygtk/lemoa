@@ -30,7 +30,7 @@ enum AppState {
 struct App {
     state: AppState,
     message: Option<String>,
-    latest_action: Option<AppMsg>,
+    back_queue: Vec<AppMsg>,
     posts: FactoryVecDeque<PostRow>,
     communities: FactoryVecDeque<CommunityRow>,
     profile_page: Controller<ProfilePage>,
@@ -52,7 +52,6 @@ pub enum AppMsg {
     Login(String, String),
     LoggedIn,
     Logout,
-    Retry,
     ShowMessage(String),
     DoneChoosingInstance(String),
     StartFetchPosts(Option<ListingType>, bool),
@@ -65,7 +64,8 @@ pub enum AppMsg {
     DoneFetchPerson(GetPersonDetailsResponse),
     OpenPost(PostId),
     DoneFetchPost(GetPostResponse),
-    OpenInbox
+    OpenInbox,
+    PopBackStack
 }
 
 #[relm4::component]
@@ -85,6 +85,12 @@ impl SimpleComponent for App {
                 pack_end =  &gtk::MenuButton {
                     set_icon_name: "view-more",
                     set_menu_model: Some(&menu_model),
+                },
+                pack_start = &gtk::Button {
+                    set_icon_name: "go-previous",
+                    connect_clicked => AppMsg::PopBackStack,
+                    #[watch]
+                    set_visible: model.back_queue.len() > 1,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Home",
@@ -279,7 +285,7 @@ impl SimpleComponent for App {
                         },
                         gtk::Button {
                             set_label: "Go Home",
-                            connect_clicked => AppMsg::Retry,
+                            connect_clicked => AppMsg::StartFetchPosts(None, true),
                         }
                     }
                 }
@@ -321,7 +327,7 @@ impl SimpleComponent for App {
         let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
         let community_search_buffer = gtk::EntryBuffer::builder().build();
 
-        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None, current_communities_page: 1, current_posts_page: 1, community_search_buffer };
+        let model = App { state, back_queue: vec![], logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, current_communities_type: None, current_posts_type: None, current_communities_page: 1, current_posts_page: 1, community_search_buffer };
 
         // fetch posts if that's the initial page
         if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None, true)) };
@@ -365,6 +371,14 @@ impl SimpleComponent for App {
     }
 
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
+        // save the back queue
+        match msg {
+            AppMsg::DoneFetchCommunities(_) | AppMsg::DoneFetchCommunity(_) | AppMsg::DoneFetchPerson(_) | AppMsg::DoneFetchPost(_) | AppMsg::DoneFetchPosts(_) | AppMsg::ShowMessage(_) => {
+               self.back_queue.push(msg.clone())
+            }
+             _ => {}
+        }
+
         match msg {
             AppMsg::DoneChoosingInstance(instance_url) => {
                 if instance_url.trim().is_empty() { return; }
@@ -499,9 +513,6 @@ impl SimpleComponent for App {
                 self.message = Some(message);
                 self.state = AppState::Message;
             }
-            AppMsg::Retry => {
-                sender.input(self.latest_action.clone().unwrap_or(AppMsg::StartFetchPosts(None, true)));
-            }
             AppMsg::OpenInbox => {
                 self.state = AppState::Inbox;
                 self.inbox_page.sender().emit(InboxInput::FetchInbox);
@@ -509,6 +520,13 @@ impl SimpleComponent for App {
             AppMsg::LoggedIn => {
                 self.logged_in = true;
                 sender.input(AppMsg::StartFetchPosts(None, true));
+            }
+            AppMsg::PopBackStack => {
+                let action = self.back_queue.get(self.back_queue.len() - 2);
+                if let Some(action) = action { sender.input(action.clone()); }
+                for _ in 0..2 {
+                    self.back_queue.remove(self.back_queue.len() - 1);
+                }
             }
         }
     }
