@@ -9,6 +9,6 @@ relm4-components = { version = "0.6.0", features = ["web"] }
 reqwest = { version = "0.11.16", features = ["json", "blocking"] }
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.96"
-lemmy_api_common = { git = "https://github.com/LemmyNet/lemmy.git", tag = "0.17.2" }
+lemmy_api_common = { git = "https://github.com/Bnyro/lemmy.git", rev = "ff69cd151988fa4cff5a6f3789c5675a2e3257f8" }
 markdown = "0.3.0"
 html2pango = "0.5.0"

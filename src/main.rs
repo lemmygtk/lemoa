@@ -49,7 +49,7 @@ struct App {
 pub enum AppMsg {
     ChooseInstance,
     ShowLogin,
-    Login(String, String),
+    Login(String, String, String),
     LoggedIn,
     Logout,
     ShowMessage(String),
@@ -198,6 +198,10 @@ impl SimpleComponent for App {
                         set_placeholder_text: Some("Password"),
                         set_show_peek_icon: true,
                     },
+                    #[name(totp_token)]
+                    gtk::Entry {
+                        set_placeholder_text: Some("Totp token (Optional)"),
+                    },
                     gtk::Box {
                         set_orientation: gtk::Orientation::Horizontal,
                         set_halign: gtk::Align::End,
@@ -209,12 +213,14 @@ impl SimpleComponent for App {
                         },
                         gtk::Button {
                             set_label: "Login",
-                            connect_clicked[sender, username, password] => move |_| {
+                            connect_clicked[sender, username, password, totp_token] => move |_| {
                                 let username_text = username.text().as_str().to_string();
                                 username.set_text("");
                                 let password_text = password.text().as_str().to_string();
                                 password.set_text("");
-                                sender.input(AppMsg::Login(username_text, password_text));
+                                let totp_token_text = totp_token.text().as_str().to_string();
+                                totp_token.set_text("");
+                                sender.input(AppMsg::Login(username_text, password_text, totp_token_text));
                             },
                         },
                     }
@@ -477,11 +483,12 @@ impl SimpleComponent for App {
             AppMsg::ShowLogin => {
                 self.state = AppState::Login;
             }
-            AppMsg::Login(username, password) => {
+            AppMsg::Login(username, password, totp_token) => {
                 if get_current_account().instance_url.is_empty() { return; }
+                let token = if totp_token.is_empty() { None } else { Some(totp_token) };
                 self.state = AppState::Loading;
                 std::thread::spawn(move || {
-                    let message = match api::auth::login(username, password) {
+                    let message = match api::auth::login(username, password, token) {
                         Ok(login) => {
                             if let Some(token) = login.jwt {
                                 let mut account = settings::get_current_account();
