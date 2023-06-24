@@ -94,6 +94,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
+                        #[watch]
                         set_label: &model.info.post_view.creator.name,
                         connect_clicked => PostInput::OpenPerson,
                     },
@@ -113,6 +114,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
+                        #[watch]
                         set_label: &model.info.community_view.community.title,
                         connect_clicked => PostInput::OpenCommunity,
                     },

@@ -99,12 +99,12 @@ impl SimpleComponent for EditorDialog {
                     set_text: "Body:",
                     set_halign: gtk::Align::Start,
                 },
-                #[name(body)]
                 gtk::TextView {
                     set_editable: true,
                     set_margin_top: 5,
                     set_margin_bottom: 10,
                     set_vexpand: true,
+                    set_buffer: Some(&model.body_buffer),
                 },
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
