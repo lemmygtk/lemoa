@@ -19,6 +19,7 @@ enum AppState {
     Posts,
     ChooseInstance,
     Communities,
+    Instances,
     Community,
     Person,
     Post,
@@ -33,6 +34,7 @@ struct App {
     latest_action: Option<AppMsg>,
     posts: FactoryVecDeque<PostRow>,
     communities: FactoryVecDeque<CommunityRow>,
+    instances: FactoryVecDeque<CommunityRow>,
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
     post_page: Controller<PostPage>,
@@ -56,6 +58,8 @@ pub enum AppMsg {
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
     ViewCommunities(Option<String>, Option<ListingType>),
+    DoneFetchInstances(Vec<CommunityView>),
+    ViewInstances(Option<String>, Option<ListingType>),
     OpenCommunity(String),
     DoneFetchCommunity(GetCommunityResponse),
     OpenPerson(String),
@@ -90,6 +94,11 @@ impl SimpleComponent for App {
                 pack_start = &gtk::Button {
                     set_label: "Communities",
                     connect_clicked => AppMsg::ViewCommunities(None, None),
+                },
+
+                pack_start = &gtk::Button {
+                    set_label: "Instances",
+                    connect_clicked => AppMsg::ViewInstances(None, None),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Recommended",
@@ -236,6 +245,44 @@ impl SimpleComponent for App {
                         }
                     }
                 }
+
+
+                AppState::Instances => gtk::Box {
+                    // gtk::ScrolledWindow {
+                    //     set_vexpand: true,
+                    //     set_hexpand: true,
+                    //
+                    //     gtk::Box {
+                    //         set_orientation: gtk::Orientation::Vertical,
+                    //         set_spacing: 10,
+                    //
+                    //         gtk::Box {
+                    //             set_margin_all: 10,
+                    //
+                    //             #[name(community_search_query)]
+                    //             gtk::Entry {
+                    //                 set_hexpand: true,
+                    //                 set_tooltip_text: Some("Search"),
+                    //                 set_margin_end: 10,
+                    //             },
+                    //             gtk::Button {
+                    //                 set_label: "Search",
+                    //                 connect_clicked[sender, community_search_query] => move |_| {
+                    //                     let text = community_search_query.text().as_str().to_string();
+                    //                     sender.input(AppMsg::ViewCommunities(Some(text), model.current_communities_type));
+                    //                 },
+                    //             }
+                    //         },
+                    //
+                    //         #[local_ref]
+                    //         communities_box -> gtk::Box {
+                    //             set_orientation: gtk::Orientation::Vertical,
+                    //             set_spacing: 5,
+                    //         }
+                    //     }
+                    // }
+                }
+
                 AppState::Person => {
                     gtk::Box {
                         #[local_ref]
@@ -301,12 +348,13 @@ impl SimpleComponent for App {
         // initialize all controllers and factories
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let communities = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
+        let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let profile_page = ProfilePage::builder().launch(default_person()).forward(sender.input_sender(), |msg| msg);
         let community_page = CommunityPage::builder().launch(default_community().community_view).forward(sender.input_sender(), |msg| msg);
         let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
         let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
         
-        let model = App { state, logged_in, posts, communities, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None };
+        let model = App { state, logged_in, posts, communities, instances, profile_page, community_page, post_page, inbox_page, message: None, latest_action: None, current_communities_type: None, current_posts_type: None };
 
         // fetch posts if that's the initial page
         if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None)) };
@@ -390,11 +438,35 @@ impl SimpleComponent for App {
                     sender.input(message);
                 });
             }
+
+            AppMsg::ViewInstances(query, listing_type) => {
+                self.state = AppState::Instances;
+                self.current_communities_type = listing_type;
+                std::thread::spawn(move || {
+                    let message = match api::site::fetch_instances() {
+                        Some(instances) => {
+                            // AppMsg::DoneFetchInstances(instances)
+                            println!("{:?}" , instances);
+                        },
+                        None => {
+                            // AppMsg::ShowMessage(err.to_string())
+                        }
+                    };
+                });
+            }
             AppMsg::DoneFetchCommunities(communities) => {
                 self.state = AppState::Communities;
                 self.communities.guard().clear();
                 for community in communities {
                     self.communities.guard().push_back(community);
+                }
+            }
+
+            AppMsg::DoneFetchInstances(instances) => {
+                self.state = AppState::Instances;
+                self.instances.guard().clear();
+                for instance in instances {
+                    self.instances.guard().push_back(instance);
                 }
             }
             AppMsg::OpenPerson(person_name) => {
