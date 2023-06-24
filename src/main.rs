@@ -7,7 +7,7 @@ pub mod dialogs;
 use api::{user::default_person, community::default_community, post::default_post};
 use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}};
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::PostId, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
+use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::{PostId, CommunityId, PersonId}, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
 use settings::get_current_account;
 
@@ -58,9 +58,9 @@ pub enum AppMsg {
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
     FetchCommunities(Option<ListingType>, bool),
-    OpenCommunity(String),
+    OpenCommunity(CommunityId),
     DoneFetchCommunity(GetCommunityResponse),
-    OpenPerson(String),
+    OpenPerson(PersonId),
     DoneFetchPerson(GetPersonDetailsResponse),
     OpenPost(PostId),
     DoneFetchPost(GetPostResponse),
@@ -241,6 +241,7 @@ impl SimpleComponent for App {
                                     set_hexpand: true,
                                     set_tooltip_text: Some("Search"),
                                     set_margin_end: 10,
+                                    set_buffer: &model.community_search_buffer,
                                 },
                                 gtk::Button {
                                     set_label: "Search",
@@ -355,8 +356,8 @@ impl SimpleComponent for App {
         });
         let profile_sender = sender.clone();
         let profile_action: RelmAction<ProfileAction> = RelmAction::new_stateless(move |_| {
-            let person = settings::get_current_account().name;
-            if !person.is_empty() { profile_sender.input(AppMsg::OpenPerson(person)); }
+            let person = settings::get_current_account();
+            if !person.name.is_empty() { profile_sender.input(AppMsg::OpenPerson(PersonId(person.id))); }
         });
         let login_sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
@@ -438,10 +439,10 @@ impl SimpleComponent for App {
                     self.communities.guard().push_back(community);
                 }
             }
-            AppMsg::OpenPerson(person_name) => {
+            AppMsg::OpenPerson(person_id) => {
                 self.state = AppState::Loading;
                 std::thread::spawn(move || {
-                    let message = match api::user::get_user(person_name, 1) {
+                    let message = match api::user::get_user(person_id, 1) {
                         Ok(person) => AppMsg::DoneFetchPerson(person),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };
@@ -452,10 +453,10 @@ impl SimpleComponent for App {
                 self.profile_page.sender().emit(profile_page::ProfileInput::UpdatePerson(person));
                 self.state = AppState::Person;
             }
-            AppMsg::OpenCommunity(community_name) => {
+            AppMsg::OpenCommunity(community_id) => {
                 self.state = AppState::Loading;
                 std::thread::spawn(move || {
-                    let message = match api::community::get_community(community_name) {
+                    let message = match api::community::get_community(community_id) {
                         Ok(community) => AppMsg::DoneFetchCommunity(community),
                         Err(err) => AppMsg::ShowMessage(err.to_string())
                     };

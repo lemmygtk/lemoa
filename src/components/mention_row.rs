@@ -138,13 +138,13 @@ impl FactoryComponent for MentionRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             MentionRowMsg::OpenPerson => {
-                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.name.clone()));
+                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id.clone()));
             }
             MentionRowMsg::OpenPost => {
                 sender.output(crate::AppMsg::OpenPost(self.comment.post.id.clone()));
             }
             MentionRowMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(self.comment.community.name.clone()));
+                sender.output(crate::AppMsg::OpenCommunity(self.comment.community.id.clone()));
             }
         }
     }

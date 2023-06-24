@@ -240,12 +240,12 @@ impl SimpleComponent for PostPage {
                 }
             }
             PostInput::OpenPerson => {
-                let name = self.info.post_view.creator.name.clone();
-                let _ = sender.output(crate::AppMsg::OpenPerson(name));
+                let person_id = self.info.post_view.creator.id.clone();
+                let _ = sender.output(crate::AppMsg::OpenPerson(person_id));
             }
             PostInput::OpenCommunity => {
-                let community_name = self.info.community_view.community.name.clone();
-                let _ = sender.output(crate::AppMsg::OpenCommunity(community_name));
+                let community_id = self.info.community_view.community.id.clone();
+                let _ = sender.output(crate::AppMsg::OpenCommunity(community_id));
             }
             PostInput::OpenLink => {
                 let post = self.info.post_view.post.clone();

@@ -1,11 +1,11 @@
-use lemmy_api_common::{person::{GetPersonDetailsResponse, GetPersonDetails, GetPersonMentionsResponse, GetRepliesResponse, MarkAllAsRead, GetReplies, GetPersonMentions}, lemmy_db_schema::CommentSortType};
+use lemmy_api_common::{person::{GetPersonDetailsResponse, GetPersonDetails, GetPersonMentionsResponse, GetRepliesResponse, MarkAllAsRead, GetReplies, GetPersonMentions}, lemmy_db_schema::{CommentSortType, newtypes::PersonId}};
 
 use crate::settings;
 
-pub fn get_user(username: String, page: i64) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
+pub fn get_user(id: PersonId, page: i64) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
     let params = GetPersonDetails {
         page: Some(page),
-        username: Some(username),
+        person_id: Some(id),
         auth: settings::get_current_account().jwt,
         ..Default::default()
     };
