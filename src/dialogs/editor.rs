@@ -1,5 +1,7 @@
-use relm4::prelude::*;
+use relm4::{prelude::*, gtk::{ResponseType, FileFilter}};
 use gtk::prelude::*;
+
+use crate::api;
 
 #[derive(Debug, Clone, Default)]
 pub struct EditorData {
@@ -17,7 +19,8 @@ pub struct EditorDialog {
     url_buffer: gtk::EntryBuffer,
     body_buffer: gtk::TextBuffer,
     // Optional field to temporarily store the post or comment id
-    id: Option<i32>
+    id: Option<i32>,
+    window: gtk::Window
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +35,10 @@ pub enum DialogMsg {
     Hide,
     UpdateType(EditorType, bool),
     UpdateData(EditorData),
-    Okay
+    Okay,
+    ChooseImage,
+    UploadImage(std::path::PathBuf),
+    AppendBody(String)
 }
 
 #[derive(Debug)]
@@ -108,7 +114,15 @@ impl SimpleComponent for EditorDialog {
                 },
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
-                    set_halign: gtk::Align::End,
+                    set_hexpand: true,
+                    gtk::Button {
+                        set_label: "Upload image",
+                        set_margin_end: 10,
+                        connect_clicked => DialogMsg::ChooseImage,
+                    },
+                    gtk::Box {
+                        set_hexpand: true,
+                    },
                     gtk::Button {
                         set_label: "Cancel",
                         set_margin_end: 10,
@@ -136,7 +150,8 @@ impl SimpleComponent for EditorDialog {
         let name_buffer = gtk::EntryBuffer::builder().build();
         let url_buffer = gtk::EntryBuffer::builder().build();
         let body_buffer = gtk::TextBuffer::builder().build();
-        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer, id: None };
+        let window = root.toplevel_window().unwrap();
+        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer, id: None, window };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -172,6 +187,37 @@ impl SimpleComponent for EditorDialog {
                 self.name_buffer.set_text(data.name);
                 if let Some(url) = data.url { self.url_buffer.set_text(url.to_string()); }
                 self.body_buffer.set_text(&data.body.clone());
+            }
+            DialogMsg::ChooseImage => {
+                let buttons = [("_Cancel", ResponseType::Cancel), ("_Okay", ResponseType::Accept)];
+                let dialog = gtk::FileChooserDialog::new(Some("Upload image"), None::<&gtk::ApplicationWindow>, gtk::FileChooserAction::Open, &buttons);
+                dialog.set_transient_for(Some(&self.window));
+                let image_filter = FileFilter::new();
+                image_filter.add_pattern("image/*");
+                dialog.add_filter(&image_filter);
+                dialog.run_async(move |dialog, result | {
+                    match result {
+                        ResponseType::Accept => {
+                            let path = dialog.file().unwrap().path();
+                            sender.input(DialogMsg::UploadImage(path.unwrap()))
+                        },
+                        _ => dialog.hide(),
+                    }
+                    dialog.destroy();
+                });
+            }
+            DialogMsg::UploadImage(path) => {
+                std::thread::spawn(move || {
+                    if let Ok(image_path) = api::image::upload_image(path) {
+                        let new_text = format!("![]({})", image_path);
+                        sender.input(DialogMsg::AppendBody(new_text));
+                    }
+                });
+            }
+            DialogMsg::AppendBody(new_text) => {
+                let (start, end) = &self.body_buffer.bounds();
+                let body = self.body_buffer.text(start, end, true).to_string();
+                self.body_buffer.set_text(&format!("{}\n{}", body, new_text));
             }
         }
     }
