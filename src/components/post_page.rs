@@ -94,6 +94,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
+                        #[watch]
                         set_label: &model.info.post_view.creator.name,
                         connect_clicked => PostInput::OpenPerson,
                     },
@@ -113,6 +114,7 @@ impl SimpleComponent for PostPage {
                     },
 
                     gtk::Button {
+                        #[watch]
                         set_label: &model.info.community_view.community.title,
                         connect_clicked => PostInput::OpenCommunity,
                     },
@@ -240,12 +242,12 @@ impl SimpleComponent for PostPage {
                 }
             }
             PostInput::OpenPerson => {
-                let name = self.info.post_view.creator.name.clone();
-                let _ = sender.output(crate::AppMsg::OpenPerson(name));
+                let person_id = self.info.post_view.creator.id.clone();
+                let _ = sender.output(crate::AppMsg::OpenPerson(person_id));
             }
             PostInput::OpenCommunity => {
-                let community_name = self.info.community_view.community.name.clone();
-                let _ = sender.output(crate::AppMsg::OpenCommunity(community_name));
+                let community_id = self.info.community_view.community.id.clone();
+                let _ = sender.output(crate::AppMsg::OpenCommunity(community_id));
             }
             PostInput::OpenLink => {
                 let post = self.info.post_view.post.clone();
@@ -280,7 +282,7 @@ impl SimpleComponent for PostPage {
                 let post_id = self.info.post_view.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);
-                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None));
+                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
             PostInput::OpenEditPostDialog => {

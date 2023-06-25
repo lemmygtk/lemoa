@@ -131,13 +131,13 @@ impl FactoryComponent for CommentRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             CommentRowMsg::OpenPerson => {
-                sender.output(PostInput::PassAppMessage(crate::AppMsg::OpenPerson(self.comment.creator.name.clone())));
+                sender.output(PostInput::PassAppMessage(crate::AppMsg::OpenPerson(self.comment.creator.id.clone())));
             }
             CommentRowMsg::DeleteComment => {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    let _ = sender.output(PostInput::PassAppMessage(crate::AppMsg::StartFetchPosts(None)));
+                    let _ = sender.output(PostInput::PassAppMessage(crate::AppMsg::StartFetchPosts(None, true)));
                 });
             }
             CommentRowMsg::OpenEditCommentDialog => {

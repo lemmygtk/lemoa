@@ -150,10 +150,10 @@ impl FactoryComponent for PostRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             PostViewMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(self.post.community.name.clone()))
+                sender.output(crate::AppMsg::OpenCommunity(self.post.community.id.clone()))
             }
             PostViewMsg::OpenPerson => {
-                sender.output(crate::AppMsg::OpenPerson(self.post.creator.name.clone()))
+                sender.output(crate::AppMsg::OpenPerson(self.post.creator.id.clone()))
             }
             PostViewMsg::OpenPost => {
                 sender.output(crate::AppMsg::OpenPost(self.post.post.id.clone()))
@@ -162,7 +162,7 @@ impl FactoryComponent for PostRow {
                 let post_id = self.post.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);
-                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None));
+                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
         }

@@ -2,9 +2,9 @@ use lemmy_api_common::{community::{GetCommunity, GetCommunityResponse, Community
 
 use crate::settings;
 
-pub fn get_community(name: String) -> std::result::Result<GetCommunityResponse, reqwest::Error> {
+pub fn get_community(id: CommunityId) -> std::result::Result<GetCommunityResponse, reqwest::Error> {
     let params = GetCommunity {
-        name: Some(name),
+        id: Some(id),
         auth: settings::get_current_account().jwt,
         ..Default::default()
     };

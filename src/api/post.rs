@@ -5,8 +5,8 @@ use crate::settings;
 pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
         id: Some(id),
-        auth: settings::get_current_account().jwt,
-        ..Default::default()
+        comment_id: None,
+        auth: settings::get_current_account().jwt
     };
 
     super::get("/post", &params)
