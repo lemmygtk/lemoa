@@ -62,6 +62,13 @@ sudo docker cp $(CONTAINER_ID):/root/lemoa/target/release/lemoa .
 
 Once the build is done, there will be an executable `lemoa` binary file in your current directory, executing it starts Lemoa :tada:.
 
+# Building with meson
+```
+meson _build
+ninja -C _build
+sudo ninja -C _build install
+```
+
 # License
 
 Lemoa is licensed under the [**GNU General Public License**](https://www.gnu.org/licenses/gpl.html): You can use, study and share it as you want.
