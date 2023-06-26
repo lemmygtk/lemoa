@@ -66,7 +66,7 @@ impl SimpleComponent for PostPage {
 
                 #[local_ref]
                 image -> gtk::Box {
-                    set_height_request: 100,
+                    set_height_request: 400,
                     set_margin_bottom: 20,
                     set_margin_top: 20,
                 },

@@ -102,7 +102,7 @@ impl SimpleComponent for App {
         #[root]
         main_window = gtk::ApplicationWindow {
             set_title: Some("Lemoa"),
-            set_default_size: (300, 100),
+            set_default_size: (1400, 800),
 
             #[wrap(Some)]
             set_titlebar = &gtk::HeaderBar {
