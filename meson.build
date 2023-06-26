@@ -8,7 +8,7 @@ project(
 
 gnome = import('gnome')
 
-application_id = 'com.lemmy-gtk.lemoa'
+application_id = 'com.lemmygtk.lemoa'
 
 dependency('glib-2.0', version: '>= 2.70')
 dependency('gio-2.0', version: '>= 2.70')

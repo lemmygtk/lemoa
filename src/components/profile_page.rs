@@ -1,6 +1,6 @@
-use lemmy_api_common::person::GetPersonDetailsResponse;
-use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
+use lemmy_api_common::person::GetPersonDetailsResponse;
+use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_msg;
@@ -11,7 +11,7 @@ use super::post_row::PostRow;
 pub struct ProfilePage {
     info: GetPersonDetailsResponse,
     avatar: Controller<WebImage>,
-    posts: FactoryVecDeque<PostRow>
+    posts: FactoryVecDeque<PostRow>,
 }
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ impl SimpleComponent for ProfilePage {
                 set_orientation: gtk::Orientation::Vertical,
                 set_vexpand: false,
                 set_margin_all: 10,
-            
+
                 #[local_ref]
                 avatar -> gtk::Box {
                     set_size_request: (100, 100),
@@ -84,7 +84,11 @@ impl SimpleComponent for ProfilePage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let model = ProfilePage { info: init, avatar, posts };
+        let model = ProfilePage {
+            info: init,
+            avatar,
+            posts,
+        };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -96,7 +100,8 @@ impl SimpleComponent for ProfilePage {
         match message {
             ProfileInput::UpdatePerson(person) => {
                 self.info = person.clone();
-                self.avatar.emit(get_web_image_msg(person.person_view.person.avatar));
+                self.avatar
+                    .emit(get_web_image_msg(person.person_view.person.avatar));
                 self.posts.guard().clear();
                 for post in person.posts {
                     self.posts.guard().push_back(post);

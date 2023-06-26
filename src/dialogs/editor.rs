@@ -1,5 +1,8 @@
-use relm4::{prelude::*, gtk::{ResponseType, FileFilter}};
 use gtk::prelude::*;
+use relm4::{
+    gtk::{FileFilter, ResponseType},
+    prelude::*,
+};
 
 use crate::api;
 
@@ -8,7 +11,7 @@ pub struct EditorData {
     pub name: String,
     pub body: String,
     pub url: Option<reqwest::Url>,
-    pub id: Option<i32>
+    pub id: Option<i32>,
 }
 
 pub struct EditorDialog {
@@ -20,13 +23,13 @@ pub struct EditorDialog {
     body_buffer: gtk::TextBuffer,
     // Optional field to temporarily store the post or comment id
     id: Option<i32>,
-    window: gtk::Window
+    window: gtk::Window,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum EditorType {
     Post,
-    Comment
+    Comment,
 }
 
 #[derive(Debug)]
@@ -38,13 +41,13 @@ pub enum DialogMsg {
     Okay,
     ChooseImage,
     UploadImage(std::path::PathBuf),
-    AppendBody(String)
+    AppendBody(String),
 }
 
 #[derive(Debug)]
 pub enum EditorOutput {
     CreateRequest(EditorData, EditorType),
-    EditRequest(EditorData, EditorType)
+    EditRequest(EditorData, EditorType),
 }
 
 #[relm4::component(pub)]
@@ -76,13 +79,13 @@ impl SimpleComponent for EditorDialog {
                                 set_label: "Post content",
                                 add_css_class: "font-bold"
                             },
-                            gtk::Entry {    
+                            gtk::Entry {
                                 set_placeholder_text: Some("Title"),
                                 set_margin_top: 10,
                                 set_margin_bottom: 10,
                                 set_buffer: &model.name_buffer,
                             },
-                            gtk::Entry {    
+                            gtk::Entry {
                                 set_placeholder_text: Some("Url"),
                                 set_margin_top: 10,
                                 set_margin_bottom: 10,
@@ -151,7 +154,16 @@ impl SimpleComponent for EditorDialog {
         let url_buffer = gtk::EntryBuffer::builder().build();
         let body_buffer = gtk::TextBuffer::builder().build();
         let window = root.toplevel_window().unwrap();
-        let model = EditorDialog { type_: init, visible: false, is_new: true, name_buffer, url_buffer, body_buffer, id: None, window };
+        let model = EditorDialog {
+            type_: init,
+            visible: false,
+            is_new: true,
+            name_buffer,
+            url_buffer,
+            body_buffer,
+            id: None,
+            window,
+        };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -164,17 +176,22 @@ impl SimpleComponent for EditorDialog {
                 self.url_buffer.set_text("");
                 self.body_buffer.set_text("");
                 self.visible = false;
-            },
+            }
             DialogMsg::Okay => {
                 let name = self.name_buffer.text().to_string();
                 let url = self.url_buffer.text().to_string();
                 let (start, end) = &self.body_buffer.bounds();
                 let body = self.body_buffer.text(start, end, true).to_string();
                 let url = reqwest::Url::parse(&url).ok();
-                let post = EditorData { name, body, url, id: self.id };
+                let post = EditorData {
+                    name,
+                    body,
+                    url,
+                    id: self.id,
+                };
                 let message = match self.is_new {
                     true => EditorOutput::CreateRequest(post, self.type_),
-                    false => EditorOutput::EditRequest(post, self.type_)
+                    false => EditorOutput::EditRequest(post, self.type_),
                 };
                 let _ = sender.output(message);
                 self.visible = false;
@@ -185,22 +202,32 @@ impl SimpleComponent for EditorDialog {
             }
             DialogMsg::UpdateData(data) => {
                 self.name_buffer.set_text(data.name);
-                if let Some(url) = data.url { self.url_buffer.set_text(url.to_string()); }
+                if let Some(url) = data.url {
+                    self.url_buffer.set_text(url.to_string());
+                }
                 self.body_buffer.set_text(&data.body.clone());
             }
             DialogMsg::ChooseImage => {
-                let buttons = [("_Cancel", ResponseType::Cancel), ("_Okay", ResponseType::Accept)];
-                let dialog = gtk::FileChooserDialog::new(Some("Upload image"), None::<&gtk::ApplicationWindow>, gtk::FileChooserAction::Open, &buttons);
+                let buttons = [
+                    ("_Cancel", ResponseType::Cancel),
+                    ("_Okay", ResponseType::Accept),
+                ];
+                let dialog = gtk::FileChooserDialog::new(
+                    Some("Upload image"),
+                    None::<&gtk::ApplicationWindow>,
+                    gtk::FileChooserAction::Open,
+                    &buttons,
+                );
                 dialog.set_transient_for(Some(&self.window));
                 let image_filter = FileFilter::new();
                 image_filter.add_pattern("image/*");
                 dialog.add_filter(&image_filter);
-                dialog.run_async(move |dialog, result | {
+                dialog.run_async(move |dialog, result| {
                     match result {
                         ResponseType::Accept => {
                             let path = dialog.file().unwrap().path();
                             sender.input(DialogMsg::UploadImage(path.unwrap()))
-                        },
+                        }
                         _ => dialog.hide(),
                     }
                     dialog.destroy();
@@ -217,7 +244,8 @@ impl SimpleComponent for EditorDialog {
             DialogMsg::AppendBody(new_text) => {
                 let (start, end) = &self.body_buffer.bounds();
                 let body = self.body_buffer.text(start, end, true).to_string();
-                self.body_buffer.set_text(&format!("{}\n{}", body, new_text));
+                self.body_buffer
+                    .set_text(&format!("{}\n{}", body, new_text));
             }
         }
     }

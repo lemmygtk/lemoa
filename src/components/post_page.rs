@@ -1,11 +1,22 @@
-use lemmy_api_common::{lemmy_db_views::structs::{CommentView, PostView}, post::GetPostResponse};
-use relm4::{prelude::*, factory::FactoryVecDeque, MessageBroker};
 use gtk::prelude::*;
+use lemmy_api_common::{
+    lemmy_db_views::structs::{CommentView, PostView},
+    post::GetPostResponse,
+};
+use relm4::{factory::FactoryVecDeque, prelude::*, MessageBroker};
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup}, dialogs::editor::{EditorDialog, EditorOutput, DialogMsg, EditorType, EditorData}, settings};
+use crate::{
+    api,
+    dialogs::editor::{DialogMsg, EditorData, EditorDialog, EditorOutput, EditorType},
+    settings,
+    util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup},
+};
 
-use super::{comment_row::CommentRow, voting_row::{VotingRowModel, VotingStats, VotingRowInput}};
+use super::{
+    comment_row::CommentRow,
+    voting_row::{VotingRowInput, VotingRowModel, VotingStats},
+};
 
 pub static POST_PAGE_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
 
@@ -17,7 +28,7 @@ pub struct PostPage {
     comments: FactoryVecDeque<CommentRow>,
     #[allow(dead_code)]
     create_comment_dialog: Controller<EditorDialog>,
-    voting_row: Controller<VotingRowModel>
+    voting_row: Controller<VotingRowModel>,
 }
 
 #[derive(Debug)]
@@ -52,7 +63,7 @@ impl SimpleComponent for PostPage {
                 set_orientation: gtk::Orientation::Vertical,
                 set_vexpand: false,
                 set_margin_all: 10,
-            
+
                 #[local_ref]
                 image -> gtk::Box {
                     set_height_request: 100,
@@ -196,16 +207,26 @@ impl SimpleComponent for PostPage {
         let dialog = EditorDialog::builder()
             .transient_for(root)
             .launch_with_broker(EditorType::Comment, &POST_PAGE_BROKER)
-            .forward(sender.input_sender(),  |msg| match msg {
+            .forward(sender.input_sender(), |msg| match msg {
                 EditorOutput::CreateRequest(comment, _) => PostInput::CreateCommentRequest(comment),
                 EditorOutput::EditRequest(post, type_) => match type_ {
                     EditorType::Post => PostInput::EditPostRequest(post),
-                    EditorType::Comment => PostInput::EditCommentRequest(post)
-                }
+                    EditorType::Comment => PostInput::EditCommentRequest(post),
+                },
             });
-        let voting_row = VotingRowModel::builder().launch(VotingStats::default()).detach();
-        let model = PostPage { info: init, image, comments, creator_avatar, community_avatar, create_comment_dialog: dialog, voting_row };
-        
+        let voting_row = VotingRowModel::builder()
+            .launch(VotingStats::default())
+            .detach();
+        let model = PostPage {
+            info: init,
+            image,
+            comments,
+            creator_avatar,
+            community_avatar,
+            create_comment_dialog: dialog,
+            voting_row,
+        };
+
         let image = model.image.widget();
         let comments = model.comments.widget();
         let creator_avatar = model.creator_avatar.widget();
@@ -220,16 +241,25 @@ impl SimpleComponent for PostPage {
         match message {
             PostInput::UpdatePost(post) => {
                 self.info = post.clone();
-                
-                self.image.emit(get_web_image_msg(post.post_view.post.thumbnail_url));
-                self.community_avatar.emit(get_web_image_msg(post.community_view.community.icon));
-                self.creator_avatar.emit(get_web_image_msg(post.post_view.creator.avatar));
 
-                self.voting_row.emit(VotingRowInput::UpdateStats(VotingStats::from_post(post.post_view.counts.clone(), post.post_view.my_vote)));
+                self.image
+                    .emit(get_web_image_msg(post.post_view.post.thumbnail_url));
+                self.community_avatar
+                    .emit(get_web_image_msg(post.community_view.community.icon));
+                self.creator_avatar
+                    .emit(get_web_image_msg(post.post_view.creator.avatar));
+
+                self.voting_row
+                    .emit(VotingRowInput::UpdateStats(VotingStats::from_post(
+                        post.post_view.counts.clone(),
+                        post.post_view.my_vote,
+                    )));
                 self.comments.guard().clear();
 
                 std::thread::spawn(move || {
-                    if post.post_view.counts.comments == 0 { return; }
+                    if post.post_view.counts.comments == 0 {
+                        return;
+                    }
                     let comments = api::post::get_comments(post.post_view.post.id);
                     if let Ok(comments) = comments {
                         sender.input(PostInput::DoneFetchComments(comments));
@@ -258,7 +288,9 @@ impl SimpleComponent for PostPage {
                 if link.is_empty() {
                     link = get_web_image_url(post.embed_video_url);
                 }
-                if link.is_empty() { return; }
+                if link.is_empty() {
+                    return;
+                }
                 gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
             }
             PostInput::OpenCreateCommentDialog => {
@@ -273,9 +305,14 @@ impl SimpleComponent for PostPage {
                 std::thread::spawn(move || {
                     let message = match api::comment::create_comment(id, post.body, None) {
                         Ok(comment) => Some(PostInput::CreatedComment(comment.comment_view)),
-                        Err(err) => { println!("{}", err.to_string()); None }
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
                     };
-                    if let Some(message) = message { sender.input(message) };
+                    if let Some(message) = message {
+                        sender.input(message)
+                    };
                 });
             }
             PostInput::DeletePost => {
@@ -288,11 +325,17 @@ impl SimpleComponent for PostPage {
             PostInput::OpenEditPostDialog => {
                 let url = match self.info.post_view.post.url.clone() {
                     Some(url) => url.to_string(),
-                    None => String::from("")
+                    None => String::from(""),
                 };
                 let data = EditorData {
                     name: self.info.post_view.post.name.clone(),
-                    body: self.info.post_view.post.body.clone().unwrap_or(String::from("")),
+                    body: self
+                        .info
+                        .post_view
+                        .post
+                        .body
+                        .clone()
+                        .unwrap_or(String::from("")),
                     url: reqwest::Url::parse(&url).ok(),
                     id: None,
                 };
@@ -305,9 +348,14 @@ impl SimpleComponent for PostPage {
                 std::thread::spawn(move || {
                     let message = match api::post::edit_post(post.name, post.url, post.body, id) {
                         Ok(post) => Some(PostInput::DoneEditPost(post.post_view)),
-                        Err(err) => { println!("{}", err.to_string()); None }
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
                     };
-                    if let Some(message) = message { sender.input(message) };
+                    if let Some(message) = message {
+                        sender.input(message)
+                    };
                 });
             }
             PostInput::DoneEditPost(post) => {
@@ -322,9 +370,14 @@ impl SimpleComponent for PostPage {
                 std::thread::spawn(move || {
                     let message = match api::comment::edit_comment(data.body, data.id.unwrap()) {
                         Ok(comment) => Some(PostInput::UpdateComment(comment.comment_view)),
-                        Err(err) => { println!("{}", err.to_string()); None }
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
                     };
-                    if let Some(message) = message { sender.input(message) };
+                    if let Some(message) = message {
+                        sender.input(message)
+                    };
                 });
             }
             PostInput::UpdateComment(comment) => {

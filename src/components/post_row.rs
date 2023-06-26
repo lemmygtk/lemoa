@@ -1,10 +1,10 @@
+use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_views::structs::PostView;
 use relm4::prelude::*;
-use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::{util::get_web_image_url, api};
 use crate::settings;
+use crate::{api, util::get_web_image_url};
 
 use super::voting_row::{VotingRowModel, VotingStats};
 
@@ -13,7 +13,7 @@ pub struct PostRow {
     post: PostView,
     author_image: Controller<WebImage>,
     community_image: Controller<WebImage>,
-    voting_row: Controller<VotingRowModel>
+    voting_row: Controller<VotingRowModel>,
 }
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ pub enum PostViewMsg {
     OpenPost,
     OpenCommunity,
     OpenPerson,
-    DeletePost
+    DeletePost,
 }
 
 #[relm4::factory(pub)]
@@ -123,23 +123,36 @@ impl FactoryComponent for PostRow {
         }
     }
 
-    fn forward_to_parent(output: Self::Output) -> Option<Self::ParentInput> { Some(output) }
+    fn forward_to_parent(output: Self::Output) -> Option<Self::ParentInput> {
+        Some(output)
+    }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        let author_image= WebImage::builder().launch(get_web_image_url(value.creator.avatar.clone())).detach();
-        let community_image= WebImage::builder().launch(get_web_image_url(value.community.icon.clone())).detach();
-        let voting_row = VotingRowModel::builder().launch(VotingStats::from_post(value.counts.clone(), value.my_vote)).detach();
+        let author_image = WebImage::builder()
+            .launch(get_web_image_url(value.creator.avatar.clone()))
+            .detach();
+        let community_image = WebImage::builder()
+            .launch(get_web_image_url(value.community.icon.clone()))
+            .detach();
+        let voting_row = VotingRowModel::builder()
+            .launch(VotingStats::from_post(value.counts.clone(), value.my_vote))
+            .detach();
 
-        Self { post: value, author_image, community_image, voting_row }
+        Self {
+            post: value,
+            author_image,
+            community_image,
+            voting_row,
+        }
     }
 
     fn init_widgets(
-            &mut self,
-            _index: &Self::Index,
-            root: &Self::Root,
-            _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
-            sender: FactorySender<Self>,
-        ) -> Self::Widgets {
+        &mut self,
+        _index: &Self::Index,
+        root: &Self::Root,
+        _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
+        sender: FactorySender<Self>,
+    ) -> Self::Widgets {
         let author_image = self.author_image.widget();
         let community_image = self.community_image.widget();
         let voting_row = self.voting_row.widget();

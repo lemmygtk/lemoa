@@ -1,8 +1,17 @@
-use lemmy_api_common::{person::{GetPersonDetailsResponse, GetPersonDetails, GetPersonMentionsResponse, GetRepliesResponse, MarkAllAsRead, GetReplies, GetPersonMentions}, lemmy_db_schema::{CommentSortType, newtypes::PersonId}};
+use lemmy_api_common::{
+    lemmy_db_schema::{newtypes::PersonId, CommentSortType},
+    person::{
+        GetPersonDetails, GetPersonDetailsResponse, GetPersonMentions, GetPersonMentionsResponse,
+        GetReplies, GetRepliesResponse, MarkAllAsRead,
+    },
+};
 
 use crate::settings;
 
-pub fn get_user(id: PersonId, page: i64) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
+pub fn get_user(
+    id: PersonId,
+    page: i64,
+) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
     let params = GetPersonDetails {
         page: Some(page),
         person_id: Some(id),
@@ -17,7 +26,10 @@ pub fn default_person() -> GetPersonDetailsResponse {
     serde_json::from_str(include_str!("../examples/person.json")).unwrap()
 }
 
-pub fn get_mentions(page: i64, unread_only: bool) -> std::result::Result<GetPersonMentionsResponse, reqwest::Error> {
+pub fn get_mentions(
+    page: i64,
+    unread_only: bool,
+) -> std::result::Result<GetPersonMentionsResponse, reqwest::Error> {
     let params = GetPersonMentions {
         auth: settings::get_current_account().jwt.unwrap(),
         unread_only: Some(unread_only),
@@ -28,7 +40,10 @@ pub fn get_mentions(page: i64, unread_only: bool) -> std::result::Result<GetPers
     super::get("/user/mention", &params)
 }
 
-pub fn get_replies(page: i64, unread_only: bool) -> std::result::Result<GetRepliesResponse, reqwest::Error> {
+pub fn get_replies(
+    page: i64,
+    unread_only: bool,
+) -> std::result::Result<GetRepliesResponse, reqwest::Error> {
     let params = GetReplies {
         auth: settings::get_current_account().jwt.unwrap(),
         page: Some(page),

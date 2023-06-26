@@ -1,4 +1,14 @@
-use lemmy_api_common::{post::{GetPost, GetPostResponse, PostResponse, CreatePost, CreatePostLike, DeletePost, EditPost}, lemmy_db_schema::{newtypes::{PostId, CommunityId}, CommentSortType, ListingType}, comment::{GetComments, GetCommentsResponse}, lemmy_db_views::structs::CommentView};
+use lemmy_api_common::{
+    comment::{GetComments, GetCommentsResponse},
+    lemmy_db_schema::{
+        newtypes::{CommunityId, PostId},
+        CommentSortType, ListingType,
+    },
+    lemmy_db_views::structs::CommentView,
+    post::{
+        CreatePost, CreatePostLike, DeletePost, EditPost, GetPost, GetPostResponse, PostResponse,
+    },
+};
 
 use crate::settings;
 
@@ -6,7 +16,7 @@ pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
         id: Some(id),
         comment_id: None,
-        auth: settings::get_current_account().jwt
+        auth: settings::get_current_account().jwt,
     };
 
     super::get("/post", &params)
@@ -54,7 +64,7 @@ pub fn edit_post(
     name: String,
     url: Option<reqwest::Url>,
     body: String,
-    post_id: i32
+    post_id: i32,
 ) -> Result<PostResponse, reqwest::Error> {
     let params = EditPost {
         name: Some(name),

@@ -1,4 +1,7 @@
-use lemmy_api_common::{comment::{CommentResponse, CreateComment, CreateCommentLike, DeleteComment, EditComment}, lemmy_db_schema::newtypes::{PostId, CommentId}};
+use lemmy_api_common::{
+    comment::{CommentResponse, CreateComment, CreateCommentLike, DeleteComment, EditComment},
+    lemmy_db_schema::newtypes::{CommentId, PostId},
+};
 
 use crate::settings;
 
@@ -27,10 +30,7 @@ pub fn like_comment(comment_id: CommentId, score: i16) -> Result<CommentResponse
     super::post("/comment/like", &params)
 }
 
-pub fn edit_comment(
-    body: String,
-    comment_id: i32
-) -> Result<CommentResponse, reqwest::Error> {
+pub fn edit_comment(body: String, comment_id: i32) -> Result<CommentResponse, reqwest::Error> {
     let params = EditComment {
         content: Some(body),
         comment_id: CommentId(comment_id),

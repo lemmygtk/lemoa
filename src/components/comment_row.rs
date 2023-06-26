@@ -1,13 +1,13 @@
+use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_views::structs::CommentView;
 use relm4::prelude::*;
-use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::api;
 use crate::dialogs::editor::EditorData;
+use crate::settings;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
-use crate::settings;
 
 use super::post_page::PostInput;
 use super::voting_row::VotingRowModel;
@@ -17,14 +17,14 @@ use super::voting_row::VotingStats;
 pub struct CommentRow {
     pub comment: CommentView,
     avatar: Controller<WebImage>,
-    voting_row: Controller<VotingRowModel>
+    voting_row: Controller<VotingRowModel>,
 }
 
 #[derive(Debug)]
 pub enum CommentRowMsg {
     OpenPerson,
     DeleteComment,
-    OpenEditCommentDialog
+    OpenEditCommentDialog,
 }
 
 #[relm4::factory(pub)]
@@ -65,7 +65,7 @@ impl FactoryComponent for CommentRow {
                     connect_clicked => CommentRowMsg::OpenPerson,
                 },
             },
-            
+
             gtk::Label {
                 #[watch]
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
@@ -99,7 +99,7 @@ impl FactoryComponent for CommentRow {
                     gtk::Box {}
                 }
             },
-            
+
             gtk::Separator {}
         }
     }
@@ -109,19 +109,30 @@ impl FactoryComponent for CommentRow {
     }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        let avatar = WebImage::builder().launch(get_web_image_url(value.creator.avatar.clone())).detach();
-        let voting_row = VotingRowModel::builder().launch(VotingStats::from_comment(value.counts.clone(), value.my_vote)).detach();
+        let avatar = WebImage::builder()
+            .launch(get_web_image_url(value.creator.avatar.clone()))
+            .detach();
+        let voting_row = VotingRowModel::builder()
+            .launch(VotingStats::from_comment(
+                value.counts.clone(),
+                value.my_vote,
+            ))
+            .detach();
 
-        Self { comment: value, avatar, voting_row }
+        Self {
+            comment: value,
+            avatar,
+            voting_row,
+        }
     }
 
     fn init_widgets(
-            &mut self,
-            _index: &Self::Index,
-            root: &Self::Root,
-            _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
-            sender: FactorySender<Self>,
-        ) -> Self::Widgets {
+        &mut self,
+        _index: &Self::Index,
+        root: &Self::Root,
+        _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
+        sender: FactorySender<Self>,
+    ) -> Self::Widgets {
         let community_image = self.avatar.widget();
         let voting_row = self.voting_row.widget();
         let widgets = view_output!();
@@ -131,13 +142,17 @@ impl FactoryComponent for CommentRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             CommentRowMsg::OpenPerson => {
-                sender.output(PostInput::PassAppMessage(crate::AppMsg::OpenPerson(self.comment.creator.id.clone())));
+                sender.output(PostInput::PassAppMessage(crate::AppMsg::OpenPerson(
+                    self.comment.creator.id.clone(),
+                )));
             }
             CommentRowMsg::DeleteComment => {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    let _ = sender.output(PostInput::PassAppMessage(crate::AppMsg::StartFetchPosts(None, true)));
+                    let _ = sender.output(PostInput::PassAppMessage(
+                        crate::AppMsg::StartFetchPosts(None, true),
+                    ));
                 });
             }
             CommentRowMsg::OpenEditCommentDialog => {

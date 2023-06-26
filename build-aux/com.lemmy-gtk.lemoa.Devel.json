@@ -1,5 +1,5 @@
 {
-    "id": "com.lemmy-gtk.lemoa",
+    "id": "com.lemmygtk.lemoa",
     "runtime": "org.gnome.Platform",
     "runtime-version": "44",
     "sdk": "org.gnome.Sdk",

@@ -1,3 +1,7 @@
 /target
 /.cargo
 /_build
+/builddir
+/.flatpak
+/.flatpak-builder
+/.vscode
