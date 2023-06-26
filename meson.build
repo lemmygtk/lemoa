@@ -9,7 +9,7 @@ project(
 gnome = import('gnome')
 
 # application_id can contain the -devel extension
-base_id = 'com.lemmygtk.lemoa'
+base_id = 'io.github.lemmygtk.lemoa'
 version = meson.project_version()
 
 # Required packages
