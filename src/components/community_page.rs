@@ -79,24 +79,32 @@ impl SimpleComponent for CommunityPage {
                         set_text: &format!("{} subscribers", model.info.counts.subscribers),
                         set_margin_end: 10,
                     },
-                    match model.info.subscribed {
-                        SubscribedType::Subscribed => {
-                            gtk::Button {
-                                set_label: "Unsubscribe",
-                                connect_clicked => CommunityInput::ToggleSubscription,
-                            }
+                    if settings::get_current_account().jwt.is_some() {
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+
+                            match model.info.subscribed {
+                                SubscribedType::Subscribed => {
+                                    gtk::Button {
+                                        set_label: "Unsubscribe",
+                                        connect_clicked => CommunityInput::ToggleSubscription,
+                                    }
+                                }
+                                SubscribedType::NotSubscribed => {
+                                    gtk::Button {
+                                        set_label: "Subscribe",
+                                        connect_clicked => CommunityInput::ToggleSubscription,
+                                    }
+                                }
+                                SubscribedType::Pending => {
+                                    gtk::Label {
+                                        set_label: "Subscription pending",
+                                    }
+                                }
+                            },
                         }
-                        SubscribedType::NotSubscribed => {
-                            gtk::Button {
-                                set_label: "Subscribe",
-                                connect_clicked => CommunityInput::ToggleSubscription,
-                            }
-                        }
-                        SubscribedType::Pending => {
-                            gtk::Label {
-                                set_label: "Subscription pending",
-                            }
-                        }
+                    } else {
+                        gtk::Box {}
                     },
                     gtk::Label {
                         #[watch]
