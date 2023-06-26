@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=@NAME@
+Exec=@EXEC@
+Icon=@ICON@
+Comment=Gtk client for Lemmy
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Network;
+Keywords=Lemmy;Lemoa,Fediverse;

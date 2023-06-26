@@ -1,0 +1,3 @@
+{
+  "C_Cpp.default.compileCommands": "builddir/vscode_compile_commands.json"
+}

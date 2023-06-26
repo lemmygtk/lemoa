@@ -10,9 +10,9 @@ gnome = import('gnome')
 
 application_id = 'com.lemmy-gtk.lemoa'
 
-dependency('glib-2.0', version: '>= 2.66')
-dependency('gio-2.0', version: '>= 2.66')
-dependency('gtk4', version: '>= 4.0.0')
+dependency('glib-2.0', version: '>= 2.70')
+dependency('gio-2.0', version: '>= 2.70')
+dependency('gtk4', version: '>= 4.10.0')
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)
 glib_compile_schemas = find_program('glib-compile-schemas', required: true)
@@ -25,15 +25,12 @@ prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 
 datadir = prefix / get_option('datadir')
+iconsdir = datadir / 'icons'
+applicationsdir = datadir / 'applications'
 pkgdatadir = datadir / meson.project_name()
 
-meson.add_dist_script(
-  'build-aux/dist-vendor.sh',
-  meson.project_build_root() / 'meson-dist' / meson.project_name() + '-' + version,
-  meson.project_source_root()
-)
-
 subdir('src')
+subdir('data')
 
 gnome.post_install(
   gtk_update_icon_cache: true,
