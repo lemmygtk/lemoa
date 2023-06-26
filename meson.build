@@ -28,6 +28,7 @@ bindir = prefix / get_option('bindir')
 datadir = prefix / get_option('datadir')
 iconsdir = datadir / 'icons'
 applicationsdir = datadir / 'applications'
+metainfodir = datadir / 'metainfo'
 pkgdatadir = datadir / meson.project_name()
 
 # Add a version suffix for devel builds

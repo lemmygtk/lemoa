@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@BASE_ID@</id>
+  <metadata_license>CC0</metadata_license>
+  <project_license>GPL-3.0</project_license>
+  <name>@NAME@</name>
+  <summary>Gtk client for Lemmy</summary>
+  <description>
+    <p>A native Gtk client for the Lemmyverse</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/lemmy-gtk/lemoa/main/data/screenshots/posts.png</image>
+      <caption>Posts view</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/lemmy-gtk/lemoa/main/data/screenshots/community.png</image>
+      <caption>Community view</caption>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/lemmy-gtk/lemoa</url>
+  <url type="bugtracker">https://github.com/lemmy-gtk/lemoa/issues</url>
+  <content_rating type="oars-1.0" />
+  <releases>
+    <release version="0.1.0" date="2023-06-26">
+        <description>
+          <ul>
+            <li>Initial release</li>
+          </ul>
+        </description>
+      </release>
+  </releases>
+  <kudos>
+    <!--
+    GNOME Software kudos:
+    https://gitlab.gnome.org/GNOME/gnome-software/blob/master/doc/kudos.md
+    -->
+    <kudo>ModernToolkit</kudo>
+    <kudo>HiDpiIcon</kudo>
+  </kudos>
+  <developer_name>Bnyro</developer_name>
+  <update_contact>bnyro@tutanota.com</update_contact>
+  <launchable type="desktop-id">@app-id@.desktop</launchable>
+  <platform>GTK 4</platform>
+</component>

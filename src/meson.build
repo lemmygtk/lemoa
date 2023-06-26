@@ -1,6 +1,6 @@
 # Configuration file
 conf = configuration_data()
-conf.set_quoted('NAME', meson.projet_name())
+conf.set_quoted('NAME', meson.project_name())
 conf.set_quoted('APP_ID', application_id)
 conf.set_quoted('PKGDATADIR', pkgdatadir)
 conf.set_quoted('VERSION', version + version_suffix)

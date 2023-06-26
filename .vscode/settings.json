@@ -1,5 +1,5 @@
 {
-  "C_Cpp.default.compileCommands": "builddir/vscode_compile_commands.json",
+  "C_Cpp.default.compileCommands": "_build/vscode_compile_commands.json",
   "files.watcherExclude": {
     "**/.dart_tool": true,
     ".flatpak/**": true,

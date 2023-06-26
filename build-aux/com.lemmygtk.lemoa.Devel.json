@@ -10,9 +10,10 @@
     "command": "lemoa",
     "finish-args": [
         "--share=ipc",
+        "--share=network",
+        "--device=dri",
         "--socket=fallback-x11",
         "--socket=wayland",
-        "--device=dri",
         "--env=RUST_LOG=lemoa=debug",
         "--env=G_MESSAGES_DEBUG=none",
         "--env=RUST_BACKTRACE=1"
@@ -40,7 +41,7 @@
             "buildsystem": "meson",
             "builddir": true,
             "config-opts": [
-                "-Dprofile=development"
+                "-Dprofile=default"
             ],
             "sources": [
                 {
