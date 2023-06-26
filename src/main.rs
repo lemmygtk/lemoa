@@ -14,6 +14,7 @@ use components::{
     post_row::PostRow,
     profile_page::{self, ProfilePage},
 };
+use dialogs::about::AboutDialog;
 use gtk::prelude::*;
 use lemmy_api_common::{
     community::GetCommunityResponse,
@@ -64,6 +65,7 @@ struct App {
     current_communities_page: i64,
     current_posts_page: i64,
     community_search_buffer: gtk::EntryBuffer,
+    about_dialog: Controller<AboutDialog>,
 }
 
 #[derive(Debug, Clone)]
@@ -87,6 +89,7 @@ pub enum AppMsg {
     DoneFetchPost(GetPostResponse),
     OpenInbox,
     PopBackStack,
+    ShowAbout,
 }
 
 #[relm4::component]
@@ -332,7 +335,8 @@ impl SimpleComponent for App {
             "Choose Instance" => ChangeInstanceAction,
             "Profile" => ProfileAction,
             "Login" => LoginAction,
-            "Logout" => LogoutAction
+            "Logout" => LogoutAction,
+            "About" => AboutAction
         }
     }
 
@@ -366,6 +370,9 @@ impl SimpleComponent for App {
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
         let community_search_buffer = gtk::EntryBuffer::builder().build();
+        let about_dialog = AboutDialog::builder()
+            .launch(root.toplevel_window().unwrap())
+            .detach();
 
         let model = App {
             state,
@@ -383,6 +390,7 @@ impl SimpleComponent for App {
             current_communities_page: 1,
             current_posts_page: 1,
             community_search_buffer,
+            about_dialog,
         };
 
         // fetch posts if that's the initial page
@@ -420,12 +428,19 @@ impl SimpleComponent for App {
         let logout_action: RelmAction<LogoutAction> = RelmAction::new_stateless(move |_| {
             sender.input(AppMsg::Logout);
         });
+        let about_action = {
+            let sender = model.about_dialog.sender().clone();
+            RelmAction::<AboutAction>::new_stateless(move |_| {
+                sender.send(()).unwrap_or_default();
+            })
+        };
 
         let mut group = RelmActionGroup::<WindowActionGroup>::new();
         group.add_action(instance_action);
         group.add_action(profile_action);
         group.add_action(login_action);
         group.add_action(logout_action);
+        group.add_action(about_action);
         group.register_for_widget(&widgets.main_window);
 
         ComponentParts { model, widgets }
@@ -628,6 +643,7 @@ impl SimpleComponent for App {
                     self.back_queue.remove(self.back_queue.len() - 1);
                 }
             }
+            AppMsg::ShowAbout => {}
         }
     }
 }
@@ -637,6 +653,7 @@ relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance"
 relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
 relm4::new_stateless_action!(LogoutAction, WindowActionGroup, "logout");
+relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
 fn main() {
     let app = RelmApp::new(config::APP_ID);

@@ -6,7 +6,7 @@ desktop_conf.set('EXEC', meson.project_name())
 
 # Desktop file
 configure_file(
-  input: '@0@.desktop.in'.format(application_id),
+  input: '@0@.desktop.in'.format(base_id),
   output: '@BASENAME@',
   install: true,
   configuration: desktop_conf,

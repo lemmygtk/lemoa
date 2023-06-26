@@ -1,3 +1,4 @@
+pub const NAME: &str = @NAME@;
 pub const APP_ID: &str = @APP_ID@;
 pub const PKGDATADIR: &str = @PKGDATADIR@;
 pub const VERSION: &str = @VERSION@;
