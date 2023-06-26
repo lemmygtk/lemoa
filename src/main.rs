@@ -7,7 +7,8 @@ pub mod dialogs;
 use api::{user::default_person, community::default_community, post::default_post};
 use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}};
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::{PostId, CommunityId, PersonId}, ListingType}, post::GetPostResponse, community::GetCommunityResponse};
+use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::{PostId, CommunityId, PersonId}, ListingType}, post::GetPostResponse, community::GetCommunityResponse,
+site::FederatedInstances};
 use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
 use settings::get_current_account;
 
@@ -59,7 +60,7 @@ pub enum AppMsg {
     StartFetchPosts(Option<ListingType>, bool),
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
-    DoneFetchInstances(Vec<CommunityView>),
+    DoneFetchInstances(FederatedInstances),
     ViewInstances(Option<String>, Option<ListingType>),
     FetchCommunities(Option<ListingType>, bool),
     OpenCommunity(CommunityId),
@@ -484,17 +485,16 @@ impl SimpleComponent for App {
 
             AppMsg::ViewInstances(query, listing_type) => {
                 self.state = AppState::Instances;
-                self.current_communities_type = listing_type;
+                // self.current_communities_type = listing_type;
                 std::thread::spawn(move || {
-                    // let message = match api::site::fetch_instances() {
-                    //     Some(instances) => {
-                    //         // AppMsg::DoneFetchInstances(instances)
-                    //         println!("{:?}" , instances);
-                    //     },
-                    //     None => {
-                    //         // AppMsg::ShowMessage(err.to_string())
-                    //     }
-                    // };
+                    let message = match api::instances::fetch_instances() {
+                        Some(instances) => {
+                            AppMsg::DoneFetchInstances(instances)
+                        },
+                        None => {
+                            AppMsg::ShowMessage(String::new())
+                        }
+                    };
                 });
             }
             AppMsg::DoneFetchCommunities(communities) => {
@@ -508,9 +508,9 @@ impl SimpleComponent for App {
             AppMsg::DoneFetchInstances(instances) => {
                 self.state = AppState::Instances;
                 self.instances.guard().clear();
-                for instance in instances {
-                    self.instances.guard().push_back(instance);
-                }
+                // for instance in instances.linked {
+                //     self.instances.guard().push_back(instance);
+                // }
             }
             AppMsg::OpenPerson(person_id) => {
                 self.state = AppState::Loading;

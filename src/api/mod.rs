@@ -13,6 +13,7 @@ pub mod moderation;
 pub mod comment;
 pub mod site;
 pub mod image;
+pub mod instances;
 
 static API_VERSION: &str = "v3";
 
