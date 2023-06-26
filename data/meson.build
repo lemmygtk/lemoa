@@ -11,7 +11,7 @@ configure_file(
   output: '@BASENAME@',
   install: true,
   configuration: desktop_conf,
-  install_dir: metainfodir
+  install_dir: datadir / 'applications'
 )
 
 # Metainfo file
@@ -20,7 +20,7 @@ configure_file(
   output: '@BASENAME@',
   install: true,
   configuration: desktop_conf,
-  install_dir: metainfodir
+  install_dir:  datadir / 'metainfo'
 )
 
 configure_file(
