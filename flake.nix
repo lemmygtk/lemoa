@@ -41,5 +41,20 @@
         };
         default = lemoa;
     };
+
+    devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+                openssl
+                pkg-config
+                gtk4
+                libadwaita
+
+                #rust
+                cargo
+                rustc
+                rust-analyzer
+                rustfmt
+        ];
+    };
   });
 }
