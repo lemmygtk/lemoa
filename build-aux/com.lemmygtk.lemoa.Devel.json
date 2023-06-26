@@ -13,7 +13,7 @@
         "--socket=fallback-x11",
         "--socket=wayland",
         "--device=dri",
-        "--env=RUST_LOG=gtk_rust_template=debug",
+        "--env=RUST_LOG=lemoa=debug",
         "--env=G_MESSAGES_DEBUG=none",
         "--env=RUST_BACKTRACE=1"
     ],
@@ -38,7 +38,7 @@
         {
             "name": "lemoa",
             "buildsystem": "meson",
-            "run-tests": true,
+            "builddir": true,
             "config-opts": [
                 "-Dprofile=development"
             ],
@@ -51,5 +51,3 @@
         }
     ]
 }
-
-
