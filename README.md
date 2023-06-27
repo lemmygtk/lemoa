@@ -1,10 +1,8 @@
 # lemoa
 
-Native Gtk client for Lemmy (alpha state)
+Native Gtk client for Lemmy (beta state)
 
 # Current state
-
-Under development, not yet ready for daily usage
 
 Working:
 
