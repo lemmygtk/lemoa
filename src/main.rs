@@ -5,7 +5,7 @@ pub mod util;
 pub mod dialogs;
 
 use api::{user::default_person, community::default_community, post::default_post};
-use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}};
+use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}, instance_row::InstanceRow};
 use gtk::prelude::*;
 use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::{PostId, CommunityId, PersonId}, ListingType}, post::GetPostResponse, community::GetCommunityResponse,
 site::FederatedInstances};
@@ -35,7 +35,7 @@ struct App {
     back_queue: Vec<AppMsg>,
     posts: FactoryVecDeque<PostRow>,
     communities: FactoryVecDeque<CommunityRow>,
-    instances: FactoryVecDeque<CommunityRow>,
+    instances: FactoryVecDeque<InstanceRow>,
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
     post_page: Controller<PostPage>,
@@ -61,7 +61,7 @@ pub enum AppMsg {
     DoneFetchPosts(Vec<PostView>),
     DoneFetchCommunities(Vec<CommunityView>),
     DoneFetchInstances(FederatedInstances),
-    ViewInstances(Option<String>, Option<ListingType>),
+    FetchInstances(Option<String>, Option<ListingType>),
     FetchCommunities(Option<ListingType>, bool),
     OpenCommunity(CommunityId),
     DoneFetchCommunity(GetCommunityResponse),
@@ -108,7 +108,7 @@ impl SimpleComponent for App {
 
                 pack_start = &gtk::Button {
                     set_label: "Instances",
-                    connect_clicked => AppMsg::ViewInstances(None, None),
+                    connect_clicked => AppMsg::FetchInstances(None, None),
                 },
                 pack_start = &gtk::Button {
                     set_label: "Recommended",
@@ -276,39 +276,39 @@ impl SimpleComponent for App {
 
 
                 AppState::Instances => gtk::Box {
-                    // gtk::ScrolledWindow {
-                    //     set_vexpand: true,
-                    //     set_hexpand: true,
-                    //
-                    //     gtk::Box {
-                    //         set_orientation: gtk::Orientation::Vertical,
-                    //         set_spacing: 10,
-                    //
-                    //         gtk::Box {
-                    //             set_margin_all: 10,
-                    //
-                    //             #[name(community_search_query)]
-                    //             gtk::Entry {
-                    //                 set_hexpand: true,
-                    //                 set_tooltip_text: Some("Search"),
-                    //                 set_margin_end: 10,
-                    //             },
-                    //             gtk::Button {
-                    //                 set_label: "Search",
-                    //                 connect_clicked[sender, community_search_query] => move |_| {
-                    //                     let text = community_search_query.text().as_str().to_string();
-                    //                     sender.input(AppMsg::ViewCommunities(Some(text), model.current_communities_type));
-                    //                 },
-                    //             }
-                    //         },
-                    //
-                    //         #[local_ref]
-                    //         communities_box -> gtk::Box {
-                    //             set_orientation: gtk::Orientation::Vertical,
-                    //             set_spacing: 5,
-                    //         }
-                    //     }
-                    // }
+                    gtk::ScrolledWindow {
+                        set_vexpand: true,
+                        set_hexpand: true,
+                    
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                            set_spacing: 10,
+                    
+                            // gtk::Box {
+                            //     set_margin_all: 10,
+                    
+                            //     #[name(community_search_query)]
+                            //     gtk::Entry {
+                            //         set_hexpand: true,
+                            //         set_tooltip_text: Some("Search"),
+                            //         set_margin_end: 10,
+                            //     },
+                            //     gtk::Button {
+                            //         set_label: "Search",
+                            //         connect_clicked[sender, community_search_query] => move |_| {
+                            //             let text = community_search_query.text().as_str().to_string();
+                            //             sender.input(AppMsg::ViewCommunities(Some(text), model.current_communities_type));
+                            //         },
+                            //     }
+                            // },
+                    
+                            #[local_ref]
+                            instances_box -> gtk::Box {
+                                set_orientation: gtk::Orientation::Vertical,
+                                set_spacing: 5,
+                            }
+                        }
+                    }
                 }
 
                 AppState::Person => {
@@ -392,6 +392,7 @@ impl SimpleComponent for App {
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
         let communities_box = model.communities.widget();
+        let instances_box = model.instances.widget();
         let profile_page = model.profile_page.widget();
         let community_page = model.community_page.widget();
         let post_page = model.post_page.widget();
@@ -483,7 +484,7 @@ impl SimpleComponent for App {
                 });
             }
 
-            AppMsg::ViewInstances(query, listing_type) => {
+            AppMsg::FetchInstances(query, listing_type) => {
                 self.state = AppState::Instances;
                 // self.current_communities_type = listing_type;
                 std::thread::spawn(move || {
@@ -495,6 +496,7 @@ impl SimpleComponent for App {
                             AppMsg::ShowMessage(String::new())
                         }
                     };
+                    sender.input(message);
                 });
             }
             AppMsg::DoneFetchCommunities(communities) => {
@@ -508,9 +510,9 @@ impl SimpleComponent for App {
             AppMsg::DoneFetchInstances(instances) => {
                 self.state = AppState::Instances;
                 self.instances.guard().clear();
-                // for instance in instances.linked {
-                //     self.instances.guard().push_back(instance);
-                // }
+                for instance in instances.linked {
+                    self.instances.guard().push_back(instance);
+                }
             }
             AppMsg::OpenPerson(person_id) => {
                 self.state = AppState::Loading;

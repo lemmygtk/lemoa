@@ -7,3 +7,4 @@ pub mod comment_row;
 pub mod voting_row;
 pub mod inbox_page;
 pub mod mention_row;
+pub mod instance_row;
