@@ -79,48 +79,43 @@ impl SimpleComponent for CommunityPage {
                         set_text: &format!("{} subscribers", model.info.counts.subscribers),
                         set_margin_end: 10,
                     },
-                    if settings::get_current_account().jwt.is_some() {
-                        gtk::Box {
-                            set_orientation: gtk::Orientation::Horizontal,
-
-                            match model.info.subscribed {
-                                SubscribedType::Subscribed => {
-                                    gtk::Button {
-                                        set_label: "Unsubscribe",
-                                        connect_clicked => CommunityInput::ToggleSubscription,
-                                    }
-                                }
-                                SubscribedType::NotSubscribed => {
-                                    gtk::Button {
-                                        set_label: "Subscribe",
-                                        connect_clicked => CommunityInput::ToggleSubscription,
-                                    }
-                                }
-                                SubscribedType::Pending => {
-                                    gtk::Label {
-                                        set_label: "Subscription pending",
-                                    }
-                                }
-                            },
-                        }
-                    } else {
-                        gtk::Box {}
-                    },
                     gtk::Label {
                         #[watch]
                         set_text: &format!("{} posts, {} comments", model.info.counts.posts, model.info.counts.comments),
                         set_margin_start: 10,
                     },
+                },
 
-                    if settings::get_current_account().jwt.is_some() {
+                if settings::get_current_account().jwt.is_some() {
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        match model.info.subscribed {
+                            SubscribedType::Subscribed => {
+                                gtk::Button {
+                                    set_label: "Unsubscribe",
+                                    connect_clicked => CommunityInput::ToggleSubscription,
+                                }
+                            }
+                            SubscribedType::NotSubscribed => {
+                                gtk::Button {
+                                    set_label: "Subscribe",
+                                    connect_clicked => CommunityInput::ToggleSubscription,
+                                }
+                            }
+                            SubscribedType::Pending => {
+                                gtk::Label {
+                                    set_label: "Subscription pending",
+                                }
+                            }
+                        },
                         gtk::Button {
                             set_label: "Create post",
                             set_margin_start: 10,
                             connect_clicked => CommunityInput::OpenCreatePostDialog,
                         }
-                    } else {
-                        gtk::Box {}
                     }
+                } else {
+                    gtk::Box {}
                 },
 
                 gtk::Separator {},
