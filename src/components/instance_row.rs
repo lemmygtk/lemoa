@@ -61,8 +61,12 @@ impl FactoryComponent for InstanceRow {
                 // },
 
                 gtk::Button {
-                    set_label: "View",
-                    // connect_clicked => instanceRowMsg::Openinstance,
+                    set_label: "Choose",
+                    connect_clicked => 
+                    {
+                        // println!("self.instance.domain: {}", self.instance.domain);
+                        InstanceRowMsg::OpenInstance
+                    },
                 },
             },
 
@@ -93,10 +97,13 @@ impl FactoryComponent for InstanceRow {
     }
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
-        // match message {
-        //     instanceRowMsg::OpenInstance => {
-        //         sender.output(crate::AppMsg::OpenInstance(self.instance.instance.id.clone()))
-        //     }
-        // }
+        match message {
+            InstanceRowMsg::OpenInstance => {
+                let mut instance_address =  String::new();
+                instance_address.push_str("https://");
+                instance_address.push_str(self.instance.domain.as_str());
+                sender.output(crate::AppMsg::DoneChoosingInstance(instance_address.clone()))
+            }
+        }
     }
 }
