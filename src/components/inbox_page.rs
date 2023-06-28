@@ -54,6 +54,9 @@ impl SimpleComponent for InboxPage {
                     set_label: "Show unread only",
                     connect_clicked => InboxInput::ToggleUnreadState,
                 },
+                gtk::Box {
+                    set_hexpand: true,
+                },
                 gtk::Button {
                     set_label: "Mark all as read",
                     connect_clicked => InboxInput::MarkAllAsRead,
