@@ -465,8 +465,10 @@ impl SimpleComponent for App {
                 }
                 let mut current_account = settings::get_current_account();
                 current_account.instance_url = instance_url;
+                current_account.jwt = None;
                 settings::update_current_account(current_account);
                 self.state = AppState::Loading;
+                self.logged_in = false;
                 sender.input(AppMsg::StartFetchPosts(None, true));
             }
             AppMsg::ChooseInstance => {
