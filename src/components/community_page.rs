@@ -72,7 +72,6 @@ impl SimpleComponent for CommunityPage {
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_halign: gtk::Align::Center,
-                    set_margin_bottom: 10,
 
                     gtk::Label {
                         #[watch]
@@ -89,6 +88,9 @@ impl SimpleComponent for CommunityPage {
                 if settings::get_current_account().jwt.is_some() {
                     gtk::Box {
                         set_orientation: gtk::Orientation::Horizontal,
+                        set_halign: gtk::Align::Center,
+                        set_margin_top: 10,
+
                         match model.info.subscribed {
                             SubscribedType::Subscribed => {
                                 gtk::Button {
@@ -118,7 +120,9 @@ impl SimpleComponent for CommunityPage {
                     gtk::Box {}
                 },
 
-                gtk::Separator {},
+                gtk::Separator {
+                    set_margin_top: 10,
+                },
 
                 #[local_ref]
                 posts -> gtk::Box {
