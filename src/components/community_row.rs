@@ -34,6 +34,12 @@ impl FactoryComponent for CommunityRow {
             set_margin_start: 10,
             set_vexpand: false,
 
+            add_controller = gtk::GestureClick {
+                connect_pressed[sender] => move |_, _, _, _| {
+                    sender.input(CommunityRowMsg::OpenCommunity);
+                }
+            },
+
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 10,
@@ -58,11 +64,6 @@ impl FactoryComponent for CommunityRow {
 
                 gtk::Label {
                     set_label: &format!("{} subscribers, {} posts", self.community.counts.subscribers, self.community.counts.posts),
-                },
-
-                gtk::Button {
-                    set_label: "View",
-                    connect_clicked => CommunityRowMsg::OpenCommunity,
                 },
             },
 
