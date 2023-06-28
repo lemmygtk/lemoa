@@ -3,8 +3,8 @@ use lemmy_api_common::lemmy_db_views::structs::PostView;
 use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::settings;
 use crate::{api, util::get_web_image_url};
+use crate::{settings, util};
 
 use super::voting_row::{VotingRowModel, VotingStats};
 
@@ -79,8 +79,9 @@ impl FactoryComponent for PostRow {
                     connect_clicked => PostRowMsg::OpenPerson,
                 },
 
-                gtk::Box {
-                    set_hexpand: true,
+                gtk::Label {
+                    set_margin_start: 10,
+                    set_label: &util::format_elapsed_time(self.post.post.published),
                 }
             },
 

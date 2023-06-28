@@ -10,6 +10,7 @@ use crate::dialogs::editor::EditorDialog;
 use crate::dialogs::editor::EditorOutput;
 use crate::dialogs::editor::EditorType;
 use crate::settings;
+use crate::util;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
@@ -70,6 +71,11 @@ impl FactoryComponent for CommentRow {
                     set_label: &self.comment.creator.name,
                     connect_clicked => CommentRowMsg::OpenPerson,
                 },
+
+                gtk::Label {
+                    set_margin_start: 10,
+                    set_label: &util::format_elapsed_time(self.comment.comment.published),
+                }
             },
 
             gtk::Label {

@@ -3,6 +3,7 @@ use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
 use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
+use crate::util;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
@@ -97,6 +98,11 @@ impl FactoryComponent for MentionRow {
                     set_label: &self.comment.creator.name,
                     connect_clicked => MentionRowMsg::OpenPerson,
                 },
+
+                gtk::Label {
+                    set_margin_start: 10,
+                    set_label: &util::format_elapsed_time(self.comment.comment.published),
+                }
             },
 
             gtk::Label {

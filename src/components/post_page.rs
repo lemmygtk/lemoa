@@ -10,7 +10,7 @@ use crate::{
     api,
     dialogs::editor::{DialogMsg, EditorData, EditorDialog, EditorOutput, EditorType},
     settings,
-    util::{get_web_image_msg, get_web_image_url, markdown_to_pango_markup},
+    util::{self, get_web_image_msg, get_web_image_url, markdown_to_pango_markup},
 };
 
 use super::{
@@ -123,6 +123,11 @@ impl SimpleComponent for PostPage {
                         #[watch]
                         set_label: &model.info.community_view.community.title,
                         connect_clicked => PostInput::OpenCommunity,
+                    },
+
+                    gtk::Label {
+                        set_margin_start: 10,
+                        set_label: &util::format_elapsed_time(model.info.post_view.post.published),
                     },
 
                     gtk::Box {
