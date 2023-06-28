@@ -4,7 +4,11 @@ use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::api;
+use crate::dialogs::editor::DialogMsg;
 use crate::dialogs::editor::EditorData;
+use crate::dialogs::editor::EditorDialog;
+use crate::dialogs::editor::EditorOutput;
+use crate::dialogs::editor::EditorType;
 use crate::settings;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
@@ -13,11 +17,11 @@ use super::post_page::PostInput;
 use super::voting_row::VotingRowModel;
 use super::voting_row::VotingStats;
 
-#[derive(Debug)]
 pub struct CommentRow {
     pub comment: CommentView,
     avatar: Controller<WebImage>,
     voting_row: Controller<VotingRowModel>,
+    comment_editor_dialog: Controller<EditorDialog>,
 }
 
 #[derive(Debug)]
@@ -25,6 +29,8 @@ pub enum CommentRowMsg {
     OpenPerson,
     DeleteComment,
     OpenEditCommentDialog,
+    EditCommentRequest(EditorData),
+    UpdateComment(CommentView),
 }
 
 #[relm4::factory(pub)]
@@ -108,7 +114,7 @@ impl FactoryComponent for CommentRow {
         Some(output)
     }
 
-    fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
+    fn init_model(value: Self::Init, _index: &DynamicIndex, sender: FactorySender<Self>) -> Self {
         let avatar = WebImage::builder()
             .launch(get_web_image_url(value.creator.avatar.clone()))
             .detach();
@@ -118,11 +124,19 @@ impl FactoryComponent for CommentRow {
                 value.my_vote,
             ))
             .detach();
+        let comment_editor_dialog = EditorDialog::builder().launch(EditorType::Comment).forward(
+            sender.input_sender(),
+            |msg| match msg {
+                EditorOutput::EditRequest(data, _) => CommentRowMsg::EditCommentRequest(data),
+                _ => unreachable!(),
+            },
+        );
 
         Self {
             comment: value,
             avatar,
             voting_row,
+            comment_editor_dialog,
         }
     }
 
@@ -162,7 +176,27 @@ impl FactoryComponent for CommentRow {
                     url: None,
                     id: Some(self.comment.comment.id.0),
                 };
-                sender.output(PostInput::OpenEditCommentDialog(data));
+                let sender = self.comment_editor_dialog.sender();
+                sender.emit(DialogMsg::UpdateData(data));
+                sender.emit(DialogMsg::UpdateType(EditorType::Comment, false));
+                sender.emit(DialogMsg::Show);
+            }
+            CommentRowMsg::UpdateComment(comment) => {
+                self.comment = comment;
+            }
+            CommentRowMsg::EditCommentRequest(data) => {
+                std::thread::spawn(move || {
+                    let message = match api::comment::edit_comment(data.body, data.id.unwrap()) {
+                        Ok(comment) => Some(CommentRowMsg::UpdateComment(comment.comment_view)),
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
+                    };
+                    if let Some(message) = message {
+                        sender.input(message)
+                    };
+                });
             }
         }
     }

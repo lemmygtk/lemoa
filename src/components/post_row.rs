@@ -90,7 +90,7 @@ impl FactoryComponent for PostRow {
                 add_css_class: "font-bold",
                 add_controller = gtk::GestureClick {
                     connect_pressed[sender] => move |_, _, _, _| {
-                        sender.input(PostRowMsg::OpenCommunity);
+                        sender.input(PostRowMsg::OpenPost);
                     }
                 },
             },

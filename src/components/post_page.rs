@@ -3,7 +3,7 @@ use lemmy_api_common::{
     lemmy_db_views::structs::{CommentView, PostView},
     post::GetPostResponse,
 };
-use relm4::{factory::FactoryVecDeque, prelude::*, MessageBroker};
+use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
 use crate::{
@@ -17,8 +17,6 @@ use super::{
     comment_row::CommentRow,
     voting_row::{VotingRowInput, VotingRowModel, VotingStats},
 };
-
-pub static POST_PAGE_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
 
 pub struct PostPage {
     info: GetPostResponse,
@@ -43,12 +41,9 @@ pub enum PostInput {
     EditPostRequest(EditorData),
     CreatedComment(CommentView),
     OpenEditPostDialog,
-    OpenEditCommentDialog(EditorData),
     DeletePost,
     DoneEditPost(PostView),
     PassAppMessage(crate::AppMsg),
-    EditCommentRequest(EditorData),
-    UpdateComment(CommentView),
 }
 
 #[relm4::component(pub)]
@@ -206,14 +201,10 @@ impl SimpleComponent for PostPage {
         let community_avatar = WebImage::builder().launch("".to_string()).detach();
         let dialog = EditorDialog::builder()
             .transient_for(root)
-            .launch_with_broker(EditorType::Comment, &POST_PAGE_BROKER)
+            .launch(EditorType::Comment)
             .forward(sender.input_sender(), |msg| match msg {
                 EditorOutput::CreateRequest(comment, _) => PostInput::CreateCommentRequest(comment),
-                EditorOutput::EditRequest(post, type_) => match type_ {
-                    EditorType::Post => PostInput::EditPostRequest(post),
-                    EditorType::Comment => PostInput::EditCommentRequest(post),
-                    _ => unreachable!(),
-                },
+                EditorOutput::EditRequest(post, _) => PostInput::EditPostRequest(post),
             });
         let voting_row = VotingRowModel::builder()
             .launch(VotingStats::default())
@@ -295,8 +286,9 @@ impl SimpleComponent for PostPage {
                 gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
             }
             PostInput::OpenCreateCommentDialog => {
-                POST_PAGE_BROKER.send(DialogMsg::UpdateType(EditorType::Comment, true));
-                POST_PAGE_BROKER.send(DialogMsg::Show);
+                let sender = self.create_comment_dialog.sender();
+                sender.emit(DialogMsg::UpdateType(EditorType::Comment, true));
+                sender.emit(DialogMsg::Show);
             }
             PostInput::CreatedComment(comment) => {
                 self.comments.guard().push_front(comment);
@@ -340,9 +332,10 @@ impl SimpleComponent for PostPage {
                     url: reqwest::Url::parse(&url).ok(),
                     id: None,
                 };
-                POST_PAGE_BROKER.send(DialogMsg::UpdateData(data));
-                POST_PAGE_BROKER.send(DialogMsg::UpdateType(EditorType::Post, false));
-                POST_PAGE_BROKER.send(DialogMsg::Show)
+                let sender = self.create_comment_dialog.sender();
+                sender.emit(DialogMsg::UpdateData(data));
+                sender.emit(DialogMsg::UpdateType(EditorType::Post, false));
+                sender.emit(DialogMsg::Show);
             }
             PostInput::EditPostRequest(post) => {
                 let id = self.info.post_view.post.id.0;
@@ -361,36 +354,6 @@ impl SimpleComponent for PostPage {
             }
             PostInput::DoneEditPost(post) => {
                 self.info.post_view = post;
-            }
-            PostInput::OpenEditCommentDialog(data) => {
-                POST_PAGE_BROKER.send(DialogMsg::UpdateData(data));
-                POST_PAGE_BROKER.send(DialogMsg::UpdateType(EditorType::Comment, false));
-                POST_PAGE_BROKER.send(DialogMsg::Show);
-            }
-            PostInput::EditCommentRequest(data) => {
-                std::thread::spawn(move || {
-                    let message = match api::comment::edit_comment(data.body, data.id.unwrap()) {
-                        Ok(comment) => Some(PostInput::UpdateComment(comment.comment_view)),
-                        Err(err) => {
-                            println!("{}", err.to_string());
-                            None
-                        }
-                    };
-                    if let Some(message) = message {
-                        sender.input(message)
-                    };
-                });
-            }
-            PostInput::UpdateComment(comment) => {
-                let mut index = 0;
-                let id = comment.comment.id;
-                loop {
-                    if self.comments.guard().get(index).unwrap().comment.comment.id == id {
-                        self.comments.guard().get_mut(index).unwrap().comment = comment;
-                        break;
-                    }
-                    index += 1;
-                }
             }
             PostInput::PassAppMessage(message) => {
                 let _ = sender.output(message);

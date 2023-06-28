@@ -7,14 +7,12 @@ use lemmy_api_common::{
     lemmy_db_schema::SubscribedType, lemmy_db_views::structs::PostView,
     lemmy_db_views_actor::structs::CommunityView,
 };
-use relm4::{factory::FactoryVecDeque, prelude::*, MessageBroker};
+use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
 use crate::{api, settings, util::get_web_image_msg};
 
 use super::post_row::PostRow;
-
-static COMMUNITY_PAGE_BROKER: MessageBroker<DialogMsg> = MessageBroker::new();
 
 pub struct CommunityPage {
     info: CommunityView,
@@ -149,7 +147,7 @@ impl SimpleComponent for CommunityPage {
 
         let dialog = EditorDialog::builder()
             .transient_for(root)
-            .launch_with_broker(EditorType::Post, &COMMUNITY_PAGE_BROKER)
+            .launch(EditorType::Post)
             .forward(sender.input_sender(), |msg| match msg {
                 EditorOutput::CreateRequest(post, _) => CommunityInput::CreatePostRequest(post),
                 _ => CommunityInput::None,
@@ -198,7 +196,10 @@ impl SimpleComponent for CommunityPage {
                     self.posts.guard().push_back(post);
                 }
             }
-            CommunityInput::OpenCreatePostDialog => COMMUNITY_PAGE_BROKER.send(DialogMsg::Show),
+            CommunityInput::OpenCreatePostDialog => {
+                let sender = self.create_post_dialog.sender();
+                sender.emit(DialogMsg::Show);
+            }
             CommunityInput::CreatedPost(post) => {
                 self.posts.guard().push_front(post);
             }
