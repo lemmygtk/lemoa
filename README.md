@@ -1,12 +1,17 @@
 # lemoa
 
-Native Gtk client for Lemmy (beta state)
+Native Gtk client for Lemmy (beta)
 
-# Current state
+## Installation
 
-Working:
+| Platform | Command                                                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flathub  | <a href="https://flathub.org/apps/details/io.github.lemmygtk.lemoa"><img src="https://flathub.org/assets/badges/flathub-badge-en.png" width="150"/></a> |
 
-- Selecting lemmy instance
+If you don't use any of these platforms, consider [building the app from source](#Building).
+
+# Features
+
 - Listing trending posts
 - Viewing a post and its comments
 - Viewing profiles
@@ -25,29 +30,20 @@ Working:
 
 - rust
 - cargo
-- libgtk-4-dev
+- pkg-config
+- libgtk-4-dev or gtk4-devel (name depends on the distro)
 
-# Installation
+# Building
 
-```sh
-cargo install --git https://github.com/lemmy-gtk/lemoa.git
+## Building with meson
+
+```
+meson _build
+ninja -C _build
+sudo ninja -C _build install
 ```
 
-You can then start the app via the terminal after adding cargo's bin directory to your PATH variable
-
-```sh
-lemoa
-```
-
-# Development
-
-Clone the repository and run
-
-```sh
-cargo run
-```
-
-# Building with Docker
+## Building with Docker
 
 ```
 sudo docker build --no-cache . -t lemoa:latest
@@ -57,12 +53,22 @@ sudo docker cp $(CONTAINER_ID):/root/lemoa/target/release/lemoa .
 
 Once the build is done, there will be an executable `lemoa` binary file in your current directory, executing it starts Lemoa :tada:.
 
-# Building with meson
+## Building the binary only
 
+Not recommended: To only install the binary (can only be started with the terminal), run
+
+```sh
+cargo install --git https://github.com/lemmygtk/lemoa.git
 ```
-meson _build
-ninja -C _build
-sudo ninja -C _build install
+
+You can then start the app via the terminal after adding cargo's bin directory to your PATH variable.
+
+# Development
+
+Clone the repository and run
+
+```sh
+cargo run
 ```
 
 # License

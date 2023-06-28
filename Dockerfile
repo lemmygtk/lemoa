@@ -13,7 +13,7 @@ RUN xbps-install -Syu &&  \
     xbps-install -y git
 
 WORKDIR /root
-RUN git clone https://github.com/lemmy-gtk/lemoa
+RUN git clone https://github.com/lemmygtk/lemoa
 RUN cd lemoa && \
     cargo build --release
 

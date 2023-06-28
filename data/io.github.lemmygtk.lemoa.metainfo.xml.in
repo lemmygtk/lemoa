@@ -10,20 +10,20 @@
   </description>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/lemmy-gtk/lemoa/main/data/screenshots/posts.png</image>
+      <image>https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/posts.png</image>
       <caption>Posts view</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/lemmy-gtk/lemoa/main/data/screenshots/community.png</image>
+      <image>https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/community.png</image>
       <caption>Community</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/lemmy-gtk/lemoa/main/data/screenshots/user.png</image>
+      <image>https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/user.png</image>
       <caption>User profile</caption>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://github.com/lemmy-gtk/lemoa</url>
-  <url type="bugtracker">https://github.com/lemmy-gtk/lemoa/issues</url>
+  <url type="homepage">https://github.com/lemmygtk/lemoa</url>
+  <url type="bugtracker">https://github.com/lemmygtk/lemoa/issues</url>
   <content_rating type="oars-1.0" />
   <releases>
     <release version="0.1.0" date="2023-06-26">
