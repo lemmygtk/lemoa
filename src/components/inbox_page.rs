@@ -8,8 +8,8 @@ use super::mention_row::MentionRow;
 
 #[derive(Debug, Clone)]
 pub enum InboxType {
-    Mentions,
     Replies,
+    Mentions,
 }
 
 pub struct InboxPage {
@@ -42,12 +42,12 @@ impl SimpleComponent for InboxPage {
                 set_margin_all: 15,
                 set_spacing: 10,
                 gtk::Button {
-                    set_label: "Mentions",
-                    connect_clicked => InboxInput::UpdateType(InboxType::Mentions),
-                },
-                gtk::Button {
                     set_label: "Replies",
                     connect_clicked => InboxInput::UpdateType(InboxType::Replies),
+                },
+                gtk::Button {
+                    set_label: "Mentions",
+                    connect_clicked => InboxInput::UpdateType(InboxType::Mentions),
                 },
                 gtk::ToggleButton {
                     set_active: false,
@@ -79,7 +79,7 @@ impl SimpleComponent for InboxPage {
             mentions,
             page: 1,
             unread_only: false,
-            type_: InboxType::Mentions,
+            type_: InboxType::Replies,
         };
         let mentions = model.mentions.widget();
         let widgets = view_output!();
