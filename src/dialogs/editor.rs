@@ -30,6 +30,7 @@ pub struct EditorDialog {
 pub enum EditorType {
     Post,
     Comment,
+    PrivateMessage,
 }
 
 #[derive(Debug)]
@@ -76,7 +77,7 @@ impl SimpleComponent for EditorDialog {
                             gtk::Label {
                                 set_halign: gtk::Align::Center,
                                 set_valign: gtk::Align::Center,
-                                set_label: "Post content",
+                                set_label: "Post",
                                 add_css_class: "font-bold"
                             },
                             gtk::Entry {
@@ -98,7 +99,17 @@ impl SimpleComponent for EditorDialog {
                             gtk::Label {
                                 set_halign: gtk::Align::Center,
                                 set_valign: gtk::Align::Center,
-                                set_label: "Comment content",
+                                set_label: "Comment",
+                                add_css_class: "font-bold"
+                            },
+                        }
+                    }
+                    EditorType::PrivateMessage => {
+                        gtk::Box {
+                            gtk::Label {
+                                set_halign: gtk::Align::Center,
+                                set_valign: gtk::Align::Center,
+                                set_label: "Private message",
                                 add_css_class: "font-bold"
                             },
                         }

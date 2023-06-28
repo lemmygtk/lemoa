@@ -212,6 +212,7 @@ impl SimpleComponent for PostPage {
                 EditorOutput::EditRequest(post, type_) => match type_ {
                     EditorType::Post => PostInput::EditPostRequest(post),
                     EditorType::Comment => PostInput::EditCommentRequest(post),
+                    _ => unreachable!(),
                 },
             });
         let voting_row = VotingRowModel::builder()
