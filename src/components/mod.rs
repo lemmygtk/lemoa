@@ -5,5 +5,6 @@ pub mod inbox_page;
 pub mod mention_row;
 pub mod post_page;
 pub mod post_row;
+pub mod private_message_row;
 pub mod profile_page;
 pub mod voting_row;

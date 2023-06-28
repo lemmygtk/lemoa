@@ -10,13 +10,20 @@ pub fn get_web_image_msg(url: Option<DbUrl>) -> WebImageMsg {
 }
 
 pub fn get_web_image_url(url: Option<DbUrl>) -> String {
-    return if let Some(url) = url {
+    if let Some(url) = url {
         url.to_string()
     } else {
-        String::from("")
-    };
+        "".to_string()
+    }
 }
 
 pub fn markdown_to_pango_markup(text: String) -> String {
     return html2pango::markup_html(&markdown::to_html(&text)).unwrap_or(text);
+}
+
+pub fn format_elapsed_time(time: chrono::NaiveDateTime) -> String {
+    let formatter = timeago::Formatter::new();
+    let current_time = chrono::Utc::now();
+    let published = time.and_utc();
+    formatter.convert_chrono(published, current_time)
 }

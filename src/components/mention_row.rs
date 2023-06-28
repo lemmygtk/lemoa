@@ -30,7 +30,7 @@ impl FactoryComponent for MentionRow {
     type Input = MentionRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = PostViewWidgets;
+    type Widgets = MentionRowWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 
@@ -104,7 +104,6 @@ impl FactoryComponent for MentionRow {
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
                set_halign: gtk::Align::Start,
                set_use_markup: true,
-               set_selectable: true,
             },
 
             #[local_ref]

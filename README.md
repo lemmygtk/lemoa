@@ -19,9 +19,6 @@ Working:
 - Voting for or against posts or comments
 - Editing and deleting posts or comments
 - Viewing the personal inbox (mentions, replies)
-
-Not yet supported:
-
 - Private messages
 
 # Build dependencies
@@ -61,6 +58,7 @@ sudo docker cp $(CONTAINER_ID):/root/lemoa/target/release/lemoa .
 Once the build is done, there will be an executable `lemoa` binary file in your current directory, executing it starts Lemoa :tada:.
 
 # Building with meson
+
 ```
 meson _build
 ninja -C _build

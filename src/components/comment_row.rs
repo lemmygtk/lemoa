@@ -77,7 +77,6 @@ impl FactoryComponent for CommentRow {
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
                set_halign: gtk::Align::Start,
                set_use_markup: true,
-               set_selectable: true,
             },
 
             gtk::Box {
