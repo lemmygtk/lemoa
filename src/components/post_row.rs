@@ -17,7 +17,7 @@ pub struct PostRow {
 }
 
 #[derive(Debug)]
-pub enum PostViewMsg {
+pub enum PostRowMsg {
     OpenPost,
     OpenCommunity,
     OpenPerson,
@@ -27,7 +27,7 @@ pub enum PostViewMsg {
 #[relm4::factory(pub)]
 impl FactoryComponent for PostRow {
     type Init = PostView;
-    type Input = PostViewMsg;
+    type Input = PostRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
     type Widgets = PostViewWidgets;
@@ -60,7 +60,7 @@ impl FactoryComponent for PostRow {
 
                 gtk::Button {
                     set_label: &self.post.community.title,
-                    connect_clicked => PostViewMsg::OpenCommunity,
+                    connect_clicked => PostRowMsg::OpenCommunity,
                 },
 
                 if self.post.creator.avatar.clone().is_some() {
@@ -76,17 +76,11 @@ impl FactoryComponent for PostRow {
 
                 gtk::Button {
                     set_label: &self.post.creator.name,
-                    connect_clicked => PostViewMsg::OpenPerson,
+                    connect_clicked => PostRowMsg::OpenPerson,
                 },
 
                 gtk::Box {
                     set_hexpand: true,
-                },
-
-                gtk::Button {
-                    set_label: "View",
-                    set_margin_end: 10,
-                    connect_clicked => PostViewMsg::OpenPost,
                 }
             },
 
@@ -94,6 +88,11 @@ impl FactoryComponent for PostRow {
                 set_halign: gtk::Align::Start,
                 set_text: &self.post.post.name,
                 add_css_class: "font-bold",
+                add_controller = gtk::GestureClick {
+                    connect_pressed[sender] => move |_, _, _, _| {
+                        sender.input(PostRowMsg::OpenCommunity);
+                    }
+                },
             },
 
             gtk::Box {
@@ -109,7 +108,7 @@ impl FactoryComponent for PostRow {
                 if self.post.creator.id.0 == settings::get_current_account().id {
                     gtk::Button {
                         set_icon_name: "edit-delete",
-                        connect_clicked => PostViewMsg::DeletePost,
+                        connect_clicked => PostRowMsg::DeletePost,
                         set_margin_start: 10,
                     }
                 } else {
@@ -162,16 +161,16 @@ impl FactoryComponent for PostRow {
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
-            PostViewMsg::OpenCommunity => {
+            PostRowMsg::OpenCommunity => {
                 sender.output(crate::AppMsg::OpenCommunity(self.post.community.id.clone()))
             }
-            PostViewMsg::OpenPerson => {
+            PostRowMsg::OpenPerson => {
                 sender.output(crate::AppMsg::OpenPerson(self.post.creator.id.clone()))
             }
-            PostViewMsg::OpenPost => {
+            PostRowMsg::OpenPost => {
                 sender.output(crate::AppMsg::OpenPost(self.post.post.id.clone()))
             }
-            PostViewMsg::DeletePost => {
+            PostRowMsg::DeletePost => {
                 let post_id = self.post.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);

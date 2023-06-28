@@ -47,6 +47,11 @@ impl FactoryComponent for MentionRow {
                 set_label: &self.comment.post.name,
                 add_css_class: "font-bold",
                 set_halign: gtk::Align::Start,
+                add_controller = gtk::GestureClick {
+                    connect_pressed[sender] => move |_, _, _, _| {
+                        sender.input(MentionRowMsg::OpenCommunity);
+                    }
+                },
             },
 
             gtk::Box {
