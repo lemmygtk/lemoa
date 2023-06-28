@@ -1,4 +1,4 @@
-use lemmy_api_common::site::{GetSiteResponse, GetSite, FederatedInstances};
+use lemmy_api_common::site::{GetSiteResponse, GetSite};
 use reqwest::Error;
 
 use crate::settings;

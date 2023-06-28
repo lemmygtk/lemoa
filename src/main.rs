@@ -1,18 +1,41 @@
-pub mod settings;
 pub mod api;
 pub mod components;
-pub mod util;
+pub mod config;
 pub mod dialogs;
+pub mod settings;
+pub mod util;
 
-use api::{user::default_person, community::default_community, post::default_post};
-use components::{post_row::PostRow, community_row::CommunityRow, profile_page::{ProfilePage, self}, community_page::{CommunityPage, self}, post_page::{PostPage, self}, inbox_page::{InboxPage, InboxInput}, instance_row::InstanceRow};
+use api::{community::default_community, post::default_post, user::default_person};
+use components::{
+    community_page::{self, CommunityPage},
+    community_row::CommunityRow,
+    inbox_page::{InboxInput, InboxPage},
+    post_page::{self, PostPage},
+    post_row::PostRow,
+    profile_page::{self, ProfilePage},
+    instance_row::InstanceRow
+};
+use dialogs::about::AboutDialog;
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_views_actor::structs::CommunityView, lemmy_db_views::structs::PostView, person::GetPersonDetailsResponse, lemmy_db_schema::{newtypes::{PostId, CommunityId, PersonId}, ListingType}, post::GetPostResponse, community::GetCommunityResponse,
-site::FederatedInstances};
-use relm4::{prelude::*, factory::FactoryVecDeque, set_global_css, actions::{RelmAction, RelmActionGroup}};
+use lemmy_api_common::{
+    community::GetCommunityResponse,
+    lemmy_db_schema::{
+        newtypes::{CommunityId, PersonId, PostId},
+        ListingType,
+    },
+    lemmy_db_views::structs::PostView,
+    lemmy_db_views_actor::structs::CommunityView,
+    person::GetPersonDetailsResponse,
+    post::GetPostResponse,
+    site::FederatedInstances
+};
+use relm4::{
+    actions::{RelmAction, RelmActionGroup},
+    factory::FactoryVecDeque,
+    prelude::*,
+    set_global_css,
+};
 use settings::get_current_account;
-
-static APP_ID: &str = "com.lemmy-gtk.lemoa";
 
 #[derive(Debug, Clone, Copy)]
 enum AppState {
@@ -26,7 +49,7 @@ enum AppState {
     Post,
     Login,
     Message,
-    Inbox
+    Inbox,
 }
 
 struct App {
@@ -46,6 +69,7 @@ struct App {
     current_communities_page: i64,
     current_posts_page: i64,
     community_search_buffer: gtk::EntryBuffer,
+    about_dialog: Controller<AboutDialog>,
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +94,8 @@ pub enum AppMsg {
     OpenPost(PostId),
     DoneFetchPost(GetPostResponse),
     OpenInbox,
-    PopBackStack
+    PopBackStack,
+    ShowAbout,
 }
 
 #[relm4::component]
@@ -83,7 +108,7 @@ impl SimpleComponent for App {
         #[root]
         main_window = gtk::ApplicationWindow {
             set_title: Some("Lemoa"),
-            set_default_size: (300, 100),
+            set_default_size: (1400, 800),
 
             #[wrap(Some)]
             set_titlebar = &gtk::HeaderBar {
@@ -133,7 +158,7 @@ impl SimpleComponent for App {
             match model.state {
                 AppState::Posts => gtk::ScrolledWindow {
                     set_hexpand: true,
-                    
+
                     gtk::Box {
                         set_orientation: gtk::Orientation::Vertical,
 
@@ -239,11 +264,11 @@ impl SimpleComponent for App {
                     gtk::ScrolledWindow {
                         set_vexpand: true,
                         set_hexpand: true,
-                    
+
                         gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
                             set_spacing: 10,
-                            
+
                             gtk::Box {
                                 set_margin_all: 10,
 
@@ -359,7 +384,8 @@ impl SimpleComponent for App {
             "Choose Instance" => ChangeInstanceAction,
             "Profile" => ProfileAction,
             "Login" => LoginAction,
-            "Logout" => LogoutAction
+            "Logout" => LogoutAction,
+            "About" => AboutAction
         }
     }
 
@@ -370,24 +396,58 @@ impl SimpleComponent for App {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let current_account = settings::get_current_account();
-        let state = if current_account.instance_url.is_empty() { AppState::ChooseInstance } else { AppState::Loading };
+        let state = if current_account.instance_url.is_empty() {
+            AppState::ChooseInstance
+        } else {
+            AppState::Loading
+        };
         let logged_in = current_account.jwt.is_some();
 
         // initialize all controllers and factories
+        let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let communities = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
-        let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
-        let profile_page = ProfilePage::builder().launch(default_person()).forward(sender.input_sender(), |msg| msg);
-        let community_page = CommunityPage::builder().launch(default_community().community_view).forward(sender.input_sender(), |msg| msg);
-        let post_page = PostPage::builder().launch(default_post()).forward(sender.input_sender(), |msg| msg);
-        let inbox_page = InboxPage::builder().launch(()).forward(sender.input_sender(), |msg| msg);
-        
+        let profile_page = ProfilePage::builder()
+            .launch(default_person())
+            .forward(sender.input_sender(), |msg| msg);
+        let community_page = CommunityPage::builder()
+            .launch(default_community().community_view)
+            .forward(sender.input_sender(), |msg| msg);
+        let post_page = PostPage::builder()
+            .launch(default_post())
+            .forward(sender.input_sender(), |msg| msg);
+        let inbox_page = InboxPage::builder()
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
         let community_search_buffer = gtk::EntryBuffer::builder().build();
+        let about_dialog = AboutDialog::builder()
+            .launch(root.toplevel_window().unwrap())
+            .detach();
 
-        let model = App { state, back_queue: vec![], logged_in, posts, instances, communities, profile_page, community_page, post_page, inbox_page, message: None, current_communities_type: None, current_posts_type: None, current_communities_page: 1, current_posts_page: 1, community_search_buffer };
+        let model = App {
+            state,
+            back_queue: vec![],
+            logged_in,
+            posts,
+            instances,
+            communities,
+            profile_page,
+            community_page,
+            post_page,
+            inbox_page,
+            message: None,
+            current_communities_type: None,
+            current_posts_type: None,
+            current_communities_page: 1,
+            current_posts_page: 1,
+            community_search_buffer,
+            about_dialog,
+        };
 
         // fetch posts if that's the initial page
-        if !current_account.instance_url.is_empty() { sender.input(AppMsg::StartFetchPosts(None, true)) };
+        if !current_account.instance_url.is_empty() {
+            sender.input(AppMsg::StartFetchPosts(None, true))
+        };
 
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
@@ -397,18 +457,21 @@ impl SimpleComponent for App {
         let community_page = model.community_page.widget();
         let post_page = model.post_page.widget();
         let inbox_page = model.inbox_page.widget();
-        
+
         let widgets = view_output!();
 
         // create the header bar menu and its actions
         let instance_sender = sender.clone();
-        let instance_action: RelmAction<ChangeInstanceAction> = RelmAction::new_stateless(move |_| {
-            instance_sender.input(AppMsg::ChooseInstance);
-        });
+        let instance_action: RelmAction<ChangeInstanceAction> =
+            RelmAction::new_stateless(move |_| {
+                instance_sender.input(AppMsg::ChooseInstance);
+            });
         let profile_sender = sender.clone();
         let profile_action: RelmAction<ProfileAction> = RelmAction::new_stateless(move |_| {
             let person = settings::get_current_account();
-            if !person.name.is_empty() { profile_sender.input(AppMsg::OpenPerson(PersonId(person.id))); }
+            if !person.name.is_empty() {
+                profile_sender.input(AppMsg::OpenPerson(PersonId(person.id)));
+            }
         });
         let login_sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
@@ -417,12 +480,19 @@ impl SimpleComponent for App {
         let logout_action: RelmAction<LogoutAction> = RelmAction::new_stateless(move |_| {
             sender.input(AppMsg::Logout);
         });
+        let about_action = {
+            let sender = model.about_dialog.sender().clone();
+            RelmAction::<AboutAction>::new_stateless(move |_| {
+                sender.send(()).unwrap_or_default();
+            })
+        };
 
         let mut group = RelmActionGroup::<WindowActionGroup>::new();
         group.add_action(instance_action);
         group.add_action(profile_action);
         group.add_action(login_action);
         group.add_action(logout_action);
+        group.add_action(about_action);
         group.register_for_widget(&widgets.main_window);
 
         ComponentParts { model, widgets }
@@ -431,15 +501,20 @@ impl SimpleComponent for App {
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         // save the back queue
         match msg {
-            AppMsg::DoneFetchCommunities(_) | AppMsg::DoneFetchCommunity(_) | AppMsg::DoneFetchPerson(_) | AppMsg::DoneFetchPost(_) | AppMsg::DoneFetchPosts(_) | AppMsg::ShowMessage(_) => {
-               self.back_queue.push(msg.clone())
-            }
-             _ => {}
+            AppMsg::DoneFetchCommunities(_)
+            | AppMsg::DoneFetchCommunity(_)
+            | AppMsg::DoneFetchPerson(_)
+            | AppMsg::DoneFetchPost(_)
+            | AppMsg::DoneFetchPosts(_)
+            | AppMsg::ShowMessage(_) => self.back_queue.push(msg.clone()),
+            _ => {}
         }
 
         match msg {
             AppMsg::DoneChoosingInstance(instance_url) => {
-                if instance_url.trim().is_empty() { return; }
+                if instance_url.trim().is_empty() {
+                    return;
+                }
                 let mut current_account = settings::get_current_account();
                 current_account.instance_url = instance_url;
                 settings::update_current_account(current_account);
@@ -451,35 +526,50 @@ impl SimpleComponent for App {
             }
             AppMsg::StartFetchPosts(type_, remove_previous) => {
                 self.current_posts_type = type_;
-                let page = if remove_previous { 1 } else { self.current_posts_page + 1 };
+                let page = if remove_previous {
+                    1
+                } else {
+                    self.current_posts_page + 1
+                };
                 self.current_posts_page = page;
                 std::thread::spawn(move || {
                     let message = match api::posts::list_posts(page, None, type_) {
                         Ok(posts) => AppMsg::DoneFetchPosts(posts),
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
+                        Err(err) => AppMsg::ShowMessage(err.to_string()),
                     };
                     sender.input(message);
                 });
             }
             AppMsg::DoneFetchPosts(posts) => {
                 self.state = AppState::Posts;
-                if self.current_posts_page == 1 { self.posts.guard().clear(); }
+                if self.current_posts_page == 1 {
+                    self.posts.guard().clear();
+                }
                 for post in posts {
                     self.posts.guard().push_back(post);
                 }
             }
             AppMsg::FetchCommunities(listing_type, remove_previous) => {
                 let query_text = self.community_search_buffer.text().as_str().to_owned();
-                let query = if query_text.is_empty() { None } else { Some(query_text) };
+                let query = if query_text.is_empty() {
+                    None
+                } else {
+                    Some(query_text)
+                };
                 self.state = AppState::Communities;
-                let page = if remove_previous { 1 } else { self.current_communities_page + 1 };
+                let page = if remove_previous {
+                    1
+                } else {
+                    self.current_communities_page + 1
+                };
                 self.current_communities_page = page;
                 self.current_communities_type = listing_type;
                 std::thread::spawn(move || {
-                    let message = match api::communities::fetch_communities(page, query, listing_type) {
-                        Ok(communities) => AppMsg::DoneFetchCommunities(communities),
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
-                    };
+                    let message =
+                        match api::communities::fetch_communities(page, query, listing_type) {
+                            Ok(communities) => AppMsg::DoneFetchCommunities(communities),
+                            Err(err) => AppMsg::ShowMessage(err.to_string()),
+                        };
                     sender.input(message);
                 });
             }
@@ -501,7 +591,9 @@ impl SimpleComponent for App {
             }
             AppMsg::DoneFetchCommunities(communities) => {
                 self.state = AppState::Communities;
-                if self.current_communities_page == 1 { self.communities.guard().clear(); }
+                if self.current_communities_page == 1 {
+                    self.communities.guard().clear();
+                }
                 for community in communities {
                     self.communities.guard().push_back(community);
                 }
@@ -519,13 +611,15 @@ impl SimpleComponent for App {
                 std::thread::spawn(move || {
                     let message = match api::user::get_user(person_id, 1) {
                         Ok(person) => AppMsg::DoneFetchPerson(person),
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
+                        Err(err) => AppMsg::ShowMessage(err.to_string()),
                     };
                     sender.input(message);
                 });
             }
             AppMsg::DoneFetchPerson(person) => {
-                self.profile_page.sender().emit(profile_page::ProfileInput::UpdatePerson(person));
+                self.profile_page
+                    .sender()
+                    .emit(profile_page::ProfileInput::UpdatePerson(person));
                 self.state = AppState::Person;
             }
             AppMsg::OpenCommunity(community_id) => {
@@ -533,13 +627,17 @@ impl SimpleComponent for App {
                 std::thread::spawn(move || {
                     let message = match api::community::get_community(community_id) {
                         Ok(community) => AppMsg::DoneFetchCommunity(community),
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
+                        Err(err) => AppMsg::ShowMessage(err.to_string()),
                     };
                     sender.input(message);
                 });
             }
             AppMsg::DoneFetchCommunity(community) => {
-                self.community_page.sender().emit(community_page::CommunityInput::UpdateCommunity(community.community_view));
+                self.community_page
+                    .sender()
+                    .emit(community_page::CommunityInput::UpdateCommunity(
+                        community.community_view,
+                    ));
                 self.state = AppState::Community;
             }
             AppMsg::OpenPost(post_id) => {
@@ -547,21 +645,29 @@ impl SimpleComponent for App {
                 std::thread::spawn(move || {
                     let message = match api::post::get_post(post_id) {
                         Ok(post) => AppMsg::DoneFetchPost(post),
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
+                        Err(err) => AppMsg::ShowMessage(err.to_string()),
                     };
                     sender.input(message);
                 });
             }
             AppMsg::DoneFetchPost(post) => {
-                self.post_page.sender().emit(post_page::PostInput::UpdatePost(post));
+                self.post_page
+                    .sender()
+                    .emit(post_page::PostInput::UpdatePost(post));
                 self.state = AppState::Post;
             }
             AppMsg::ShowLogin => {
                 self.state = AppState::Login;
             }
             AppMsg::Login(username, password, totp_token) => {
-                if get_current_account().instance_url.is_empty() { return; }
-                let token = if totp_token.is_empty() { None } else { Some(totp_token) };
+                if get_current_account().instance_url.is_empty() {
+                    return;
+                }
+                let token = if totp_token.is_empty() {
+                    None
+                } else {
+                    Some(totp_token)
+                };
                 self.state = AppState::Loading;
                 std::thread::spawn(move || {
                     let message = match api::auth::login(username, password, token) {
@@ -581,7 +687,7 @@ impl SimpleComponent for App {
                                 AppMsg::ShowMessage("Wrong credentials!".to_string())
                             }
                         }
-                        Err(err) => AppMsg::ShowMessage(err.to_string())
+                        Err(err) => AppMsg::ShowMessage(err.to_string()),
                     };
                     sender.input(message);
                 });
@@ -606,11 +712,14 @@ impl SimpleComponent for App {
             }
             AppMsg::PopBackStack => {
                 let action = self.back_queue.get(self.back_queue.len() - 2);
-                if let Some(action) = action { sender.input(action.clone()); }
+                if let Some(action) = action {
+                    sender.input(action.clone());
+                }
                 for _ in 0..2 {
                     self.back_queue.remove(self.back_queue.len() - 1);
                 }
             }
+            AppMsg::ShowAbout => {}
         }
     }
 }
@@ -620,9 +729,10 @@ relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance"
 relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
 relm4::new_stateless_action!(LogoutAction, WindowActionGroup, "logout");
+relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
 fn main() {
-    let app = RelmApp::new(APP_ID);
+    let app = RelmApp::new(config::APP_ID);
     set_global_css(include_str!("style.css"));
     app.run::<App>(());
 }

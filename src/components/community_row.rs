@@ -1,6 +1,6 @@
+use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_views_actor::structs::CommunityView;
 use relm4::prelude::*;
-use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_url;
@@ -75,18 +75,23 @@ impl FactoryComponent for CommunityRow {
     }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        let community_image= WebImage::builder().launch(get_web_image_url(value.community.clone().icon)).detach();
+        let community_image = WebImage::builder()
+            .launch(get_web_image_url(value.community.clone().icon))
+            .detach();
 
-        Self { community: value, community_image }
+        Self {
+            community: value,
+            community_image,
+        }
     }
 
     fn init_widgets(
-            &mut self,
-            _index: &Self::Index,
-            root: &Self::Root,
-            _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
-            sender: FactorySender<Self>,
-        ) -> Self::Widgets {
+        &mut self,
+        _index: &Self::Index,
+        root: &Self::Root,
+        _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
+        sender: FactorySender<Self>,
+    ) -> Self::Widgets {
         let community_image = self.community_image.widget();
         let widgets = view_output!();
         widgets
@@ -94,9 +99,9 @@ impl FactoryComponent for CommunityRow {
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
-            CommunityRowMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(self.community.community.id.clone()))
-            }
+            CommunityRowMsg::OpenCommunity => sender.output(crate::AppMsg::OpenCommunity(
+                self.community.community.id.clone(),
+            )),
         }
     }
 }

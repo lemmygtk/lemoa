@@ -1,10 +1,16 @@
-use crate::{util::markdown_to_pango_markup, dialogs::editor::{EditorDialog, DialogMsg, EditorOutput, EditorType, EditorData}};
-use lemmy_api_common::{lemmy_db_views::structs::PostView, lemmy_db_views_actor::structs::CommunityView, lemmy_db_schema::SubscribedType};
-use relm4::{prelude::*, factory::FactoryVecDeque, MessageBroker};
+use crate::{
+    dialogs::editor::{DialogMsg, EditorData, EditorDialog, EditorOutput, EditorType},
+    util::markdown_to_pango_markup,
+};
 use gtk::prelude::*;
+use lemmy_api_common::{
+    lemmy_db_schema::SubscribedType, lemmy_db_views::structs::PostView,
+    lemmy_db_views_actor::structs::CommunityView,
+};
+use relm4::{factory::FactoryVecDeque, prelude::*, MessageBroker};
 use relm4_components::web_image::WebImage;
 
-use crate::{api, util::get_web_image_msg, settings};
+use crate::{api, settings, util::get_web_image_msg};
 
 use super::post_row::PostRow;
 
@@ -16,7 +22,7 @@ pub struct CommunityPage {
     posts: FactoryVecDeque<PostRow>,
     #[allow(dead_code)]
     create_post_dialog: Controller<EditorDialog>,
-    current_posts_page: i64
+    current_posts_page: i64,
 }
 
 #[derive(Debug)]
@@ -29,7 +35,7 @@ pub enum CommunityInput {
     CreatedPost(PostView),
     ToggleSubscription,
     UpdateSubscriptionState(SubscribedType),
-    None
+    None,
 }
 
 #[relm4::component(pub)]
@@ -46,7 +52,7 @@ impl SimpleComponent for CommunityPage {
                 set_orientation: gtk::Orientation::Vertical,
                 set_vexpand: false,
                 set_margin_all: 10,
-            
+
                 #[local_ref]
                 avatar -> gtk::Box {
                     set_size_request: (100, 100),
@@ -73,40 +79,43 @@ impl SimpleComponent for CommunityPage {
                         set_text: &format!("{} subscribers", model.info.counts.subscribers),
                         set_margin_end: 10,
                     },
-                    match model.info.subscribed {
-                        SubscribedType::Subscribed => {
-                            gtk::Button {
-                                set_label: "Unsubscribe",
-                                connect_clicked => CommunityInput::ToggleSubscription,
-                            }
-                        }
-                        SubscribedType::NotSubscribed => {
-                            gtk::Button {
-                                set_label: "Subscribe",
-                                connect_clicked => CommunityInput::ToggleSubscription,
-                            }
-                        }
-                        SubscribedType::Pending => {
-                            gtk::Label {
-                                set_label: "Subscription pending",
-                            }
-                        }
-                    },
                     gtk::Label {
                         #[watch]
                         set_text: &format!("{} posts, {} comments", model.info.counts.posts, model.info.counts.comments),
                         set_margin_start: 10,
                     },
+                },
 
-                    if settings::get_current_account().jwt.is_some() {
+                if settings::get_current_account().jwt.is_some() {
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        match model.info.subscribed {
+                            SubscribedType::Subscribed => {
+                                gtk::Button {
+                                    set_label: "Unsubscribe",
+                                    connect_clicked => CommunityInput::ToggleSubscription,
+                                }
+                            }
+                            SubscribedType::NotSubscribed => {
+                                gtk::Button {
+                                    set_label: "Subscribe",
+                                    connect_clicked => CommunityInput::ToggleSubscription,
+                                }
+                            }
+                            SubscribedType::Pending => {
+                                gtk::Label {
+                                    set_label: "Subscription pending",
+                                }
+                            }
+                        },
                         gtk::Button {
                             set_label: "Create post",
                             set_margin_start: 10,
                             connect_clicked => CommunityInput::OpenCreatePostDialog,
                         }
-                    } else {
-                        gtk::Box {}
                     }
+                } else {
+                    gtk::Box {}
                 },
 
                 gtk::Separator {},
@@ -137,12 +146,18 @@ impl SimpleComponent for CommunityPage {
         let dialog = EditorDialog::builder()
             .transient_for(root)
             .launch_with_broker(EditorType::Post, &COMMUNITY_PAGE_BROKER)
-            .forward(sender.input_sender(),  |msg| match msg {
+            .forward(sender.input_sender(), |msg| match msg {
                 EditorOutput::CreateRequest(post, _) => CommunityInput::CreatePostRequest(post),
-                _ => CommunityInput::None
+                _ => CommunityInput::None,
             });
 
-        let model = CommunityPage { info: init, avatar, posts, create_post_dialog: dialog, current_posts_page: 0 };
+        let model = CommunityPage {
+            info: init,
+            avatar,
+            posts,
+            create_post_dialog: dialog,
+            current_posts_page: 0,
+        };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
@@ -154,10 +169,13 @@ impl SimpleComponent for CommunityPage {
         match message {
             CommunityInput::UpdateCommunity(community) => {
                 self.info = community.clone();
-                self.avatar.emit(get_web_image_msg(community.community.icon));
+                self.avatar
+                    .emit(get_web_image_msg(community.community.icon));
                 self.posts.guard().clear();
                 self.current_posts_page = 0;
-                if community.counts.posts == 0 { return; }
+                if community.counts.posts == 0 {
+                    return;
+                }
                 sender.input(CommunityInput::FetchPosts);
             }
             CommunityInput::FetchPosts => {
@@ -176,9 +194,7 @@ impl SimpleComponent for CommunityPage {
                     self.posts.guard().push_back(post);
                 }
             }
-            CommunityInput::OpenCreatePostDialog => {
-                COMMUNITY_PAGE_BROKER.send(DialogMsg::Show)
-            }
+            CommunityInput::OpenCreatePostDialog => COMMUNITY_PAGE_BROKER.send(DialogMsg::Show),
             CommunityInput::CreatedPost(post) => {
                 self.posts.guard().push_front(post);
             }
@@ -187,23 +203,35 @@ impl SimpleComponent for CommunityPage {
                 std::thread::spawn(move || {
                     let message = match api::post::create_post(post.name, post.body, post.url, id) {
                         Ok(post) => Some(CommunityInput::CreatedPost(post.post_view)),
-                        Err(err) => { println!("{}", err.to_string()); None }
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
                     };
-                    if let Some(message) = message { sender.input(message) };
+                    if let Some(message) = message {
+                        sender.input(message)
+                    };
                 });
             }
             CommunityInput::ToggleSubscription => {
                 let community_id = self.info.community.id.0;
                 let new_state = match self.info.subscribed {
                     SubscribedType::NotSubscribed => true,
-                    _ => false
+                    _ => false,
                 };
                 std::thread::spawn(move || {
                     let message = match api::community::follow_community(community_id, new_state) {
-                        Ok(community) => Some(CommunityInput::UpdateSubscriptionState(community.community_view.subscribed)),
-                        Err(err) => { println!("{}", err.to_string()); None }
+                        Ok(community) => Some(CommunityInput::UpdateSubscriptionState(
+                            community.community_view.subscribed,
+                        )),
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                            None
+                        }
                     };
-                    if message.is_some() { sender.input(message.unwrap()) };
+                    if message.is_some() {
+                        sender.input(message.unwrap())
+                    };
                 });
             }
             CommunityInput::UpdateSubscriptionState(state) => {

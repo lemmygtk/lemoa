@@ -1,8 +1,8 @@
-use std::{fs::File, path::PathBuf};
+use crate::config::APP_ID;
 use crate::gtk::glib;
 use lemmy_api_common::sensitive::Sensitive;
 use serde::{Deserialize, Serialize};
-use crate::APP_ID;
+use std::{fs::File, path::PathBuf};
 
 #[derive(Deserialize, Serialize, Default, Clone)]
 pub struct Account {
@@ -15,7 +15,7 @@ pub struct Account {
 #[derive(Deserialize, Serialize, Default)]
 pub struct Preferences {
     pub accounts: Vec<Account>,
-    pub current_account_index: u32
+    pub current_account_index: u32,
 }
 
 pub fn data_path() -> PathBuf {

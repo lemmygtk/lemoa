@@ -1,6 +1,9 @@
-use lemmy_api_common::{lemmy_db_schema::{aggregates::structs::{PostAggregates, CommentAggregates}, newtypes::{PostId, CommentId}}};
-use relm4::{SimpleComponent, ComponentParts, gtk};
 use gtk::prelude::*;
+use lemmy_api_common::lemmy_db_schema::{
+    aggregates::structs::{CommentAggregates, PostAggregates},
+    newtypes::{CommentId, PostId},
+};
+use relm4::{gtk, ComponentParts, SimpleComponent};
 
 use crate::{api, settings};
 
@@ -15,7 +18,7 @@ pub struct VotingStats {
     #[allow(dead_code)]
     id: i32,
     post_id: Option<i32>,
-    comment_id: Option<i32>
+    comment_id: Option<i32>,
 }
 
 impl VotingStats {
@@ -46,7 +49,7 @@ impl VotingStats {
 
 #[derive(Debug)]
 pub struct VotingRowModel {
-    stats: VotingStats
+    stats: VotingStats,
 }
 
 #[derive(Debug)]
@@ -56,9 +59,7 @@ pub enum VotingRowInput {
 }
 
 #[derive(Debug)]
-pub enum VotingRowOutput {
-
-}
+pub enum VotingRowOutput {}
 
 #[relm4::component(pub)]
 impl SimpleComponent for VotingRowModel {
@@ -105,24 +106,52 @@ impl SimpleComponent for VotingRowModel {
         match message {
             VotingRowInput::Vote(vote) => {
                 let mut score = self.stats.own_vote.unwrap_or(0) + vote;
-                if score < -1 || score > 1 { score = 0 };
-                if settings::get_current_account().jwt.is_none() { return; }
+                if score < -1 || score > 1 {
+                    score = 0
+                };
+                if settings::get_current_account().jwt.is_none() {
+                    return;
+                }
                 let stats = self.stats.clone();
                 std::thread::spawn(move || {
                     let info = if stats.post_id.is_some() {
-                        let response = api::post::like_post(PostId { 0: stats.post_id.unwrap() }, score);
+                        let response = api::post::like_post(
+                            PostId {
+                                0: stats.post_id.unwrap(),
+                            },
+                            score,
+                        );
                         match response {
-                            Ok(post) => Some(VotingStats::from_post(post.post_view.counts, post.post_view.my_vote)),
-                            Err(err) => { println!("{}", err.to_string()); None }
+                            Ok(post) => Some(VotingStats::from_post(
+                                post.post_view.counts,
+                                post.post_view.my_vote,
+                            )),
+                            Err(err) => {
+                                println!("{}", err.to_string());
+                                None
+                            }
                         }
                     } else {
-                        let response = api::comment::like_comment(CommentId { 0: stats.comment_id.unwrap() }, score);
+                        let response = api::comment::like_comment(
+                            CommentId {
+                                0: stats.comment_id.unwrap(),
+                            },
+                            score,
+                        );
                         match response {
-                            Ok(comment) => Some(VotingStats::from_comment(comment.comment_view.counts, comment.comment_view.my_vote)),
-                            Err(err) => { println!("{}", err.to_string()); None }
+                            Ok(comment) => Some(VotingStats::from_comment(
+                                comment.comment_view.counts,
+                                comment.comment_view.my_vote,
+                            )),
+                            Err(err) => {
+                                println!("{}", err.to_string());
+                                None
+                            }
                         }
                     };
-                    if let Some(info) = info { sender.input(VotingRowInput::UpdateStats(info)) };
+                    if let Some(info) = info {
+                        sender.input(VotingRowInput::UpdateStats(info))
+                    };
                 });
             }
             VotingRowInput::UpdateStats(stats) => {

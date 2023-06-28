@@ -1,6 +1,6 @@
-use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
-use relm4::{prelude::*, factory::FactoryVecDeque};
 use gtk::prelude::*;
+use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
+use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
@@ -16,7 +16,7 @@ pub struct InboxPage {
     mentions: FactoryVecDeque<MentionRow>,
     page: i64,
     unread_only: bool,
-    type_: InboxType
+    type_: InboxType,
 }
 
 #[derive(Debug)]
@@ -70,12 +70,17 @@ impl SimpleComponent for InboxPage {
     }
 
     fn init(
-            _init: Self::Init,
-            root: &Self::Root,
-            sender: ComponentSender<Self>,
-        ) -> ComponentParts<Self> {
+        _init: Self::Init,
+        root: &Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
         let mentions = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let model = Self { mentions, page: 1, unread_only: false, type_: InboxType::Mentions };
+        let model = Self {
+            mentions,
+            page: 1,
+            unread_only: false,
+            type_: InboxType::Mentions,
+        };
         let mentions = model.mentions.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -94,12 +99,16 @@ impl SimpleComponent for InboxPage {
                                 // It's just a different object, but its contents are exactly the same
                                 let serialised = serde_json::to_string(&response.mentions).unwrap();
                                 serde_json::from_str(&serialised).ok()
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                         InboxType::Replies => {
                             if let Ok(response) = api::user::get_replies(page, unread_only) {
                                 Some(response.replies)
-                            } else { None }
+                            } else {
+                                None
+                            }
                         }
                     };
                     if let Some(comments) = comments {

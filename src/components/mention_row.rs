@@ -1,6 +1,6 @@
+use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
 use relm4::prelude::*;
-use gtk::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_url;
@@ -14,7 +14,7 @@ pub struct MentionRow {
     comment: CommentReplyView,
     creator_image: Controller<WebImage>,
     community_image: Controller<WebImage>,
-    voting_row: Controller<VotingRowModel>
+    voting_row: Controller<VotingRowModel>,
 }
 
 #[derive(Debug)]
@@ -93,7 +93,7 @@ impl FactoryComponent for MentionRow {
                     connect_clicked => MentionRowMsg::OpenPerson,
                 },
             },
-            
+
             gtk::Label {
                 #[watch]
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
@@ -104,7 +104,7 @@ impl FactoryComponent for MentionRow {
 
             #[local_ref]
             voting_row -> gtk::Box {},
-            
+
             gtk::Separator {}
         }
     }
@@ -114,11 +114,25 @@ impl FactoryComponent for MentionRow {
     }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        let creator_image = WebImage::builder().launch(get_web_image_url(value.creator.avatar.clone())).detach();
-        let community_image = WebImage::builder().launch(get_web_image_url(value.community.icon.clone())).detach();
-        let voting_row = VotingRowModel::builder().launch(VotingStats::from_comment(value.counts.clone(), value.my_vote)).detach();
+        let creator_image = WebImage::builder()
+            .launch(get_web_image_url(value.creator.avatar.clone()))
+            .detach();
+        let community_image = WebImage::builder()
+            .launch(get_web_image_url(value.community.icon.clone()))
+            .detach();
+        let voting_row = VotingRowModel::builder()
+            .launch(VotingStats::from_comment(
+                value.counts.clone(),
+                value.my_vote,
+            ))
+            .detach();
 
-        Self { comment: value, creator_image, community_image, voting_row }
+        Self {
+            comment: value,
+            creator_image,
+            community_image,
+            voting_row,
+        }
     }
 
     fn init_widgets(
@@ -144,7 +158,9 @@ impl FactoryComponent for MentionRow {
                 sender.output(crate::AppMsg::OpenPost(self.comment.post.id.clone()));
             }
             MentionRowMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(self.comment.community.id.clone()));
+                sender.output(crate::AppMsg::OpenCommunity(
+                    self.comment.community.id.clone(),
+                ));
             }
         }
     }

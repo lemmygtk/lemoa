@@ -1,10 +1,10 @@
-pub mod post_row;
-pub mod community_row;
-pub mod profile_page;
-pub mod community_page;
-pub mod post_page;
 pub mod comment_row;
-pub mod voting_row;
+pub mod community_page;
+pub mod community_row;
 pub mod inbox_page;
 pub mod mention_row;
 pub mod instance_row;
+pub mod post_page;
+pub mod post_row;
+pub mod profile_page;
+pub mod voting_row;
