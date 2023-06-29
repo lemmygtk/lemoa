@@ -364,8 +364,8 @@ impl SimpleComponent for App {
                             set_text: &model.message.clone().unwrap_or("".to_string()),
                         },
                         gtk::Button {
-                            set_label: "Go Home",
-                            connect_clicked => AppMsg::StartFetchPosts(None, true),
+                            set_label: "Go back",
+                            connect_clicked => AppMsg::PopBackStack,
                         }
                     }
                 }
@@ -515,11 +515,26 @@ impl SimpleComponent for App {
                 if instance_url.trim().is_empty() {
                     return;
                 }
-                let mut current_account = settings::get_current_account();
-                current_account.instance_url = instance_url;
-                settings::update_current_account(current_account);
-                self.state = AppState::Loading;
-                sender.input(AppMsg::StartFetchPosts(None, true));
+                let url_with_scheme = if instance_url.starts_with("http") {
+                    instance_url
+                } else {
+                    format!("https://{}", instance_url)
+                };
+                let message = match reqwest::Url::parse(&url_with_scheme) {
+                    Ok(url) => {
+                        let mut current_account = settings::get_current_account();
+                        let url = url.to_string();
+                        // remove the "/" at the end of the url
+                        current_account.instance_url = url[0..url.len() - 1].to_string();
+                        current_account.jwt = None;
+                        settings::update_current_account(current_account);
+                        self.state = AppState::Loading;
+                        self.logged_in = false;
+                        AppMsg::StartFetchPosts(None, true)
+                    }
+                    Err(err) => AppMsg::ShowMessage(err.to_string()),
+                };
+                sender.input(message);
             }
             AppMsg::ChooseInstance => {
                 self.state = AppState::ChooseInstance;

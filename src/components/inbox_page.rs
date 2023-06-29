@@ -1,19 +1,23 @@
 use gtk::prelude::*;
-use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
+use lemmy_api_common::{
+    lemmy_db_views::structs::PrivateMessageView, lemmy_db_views_actor::structs::CommentReplyView,
+};
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
-use super::mention_row::MentionRow;
+use super::{mention_row::MentionRow, private_message_row::PrivateMessageRow};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum InboxType {
-    Mentions,
     Replies,
+    Mentions,
+    PrivateMessages,
 }
 
 pub struct InboxPage {
     mentions: FactoryVecDeque<MentionRow>,
+    private_messages: FactoryVecDeque<PrivateMessageRow>,
     page: i64,
     unread_only: bool,
     type_: InboxType,
@@ -25,6 +29,7 @@ pub enum InboxInput {
     ToggleUnreadState,
     FetchInbox,
     UpdateInbox(Vec<CommentReplyView>),
+    UpdatePrivateMessages(Vec<PrivateMessageView>),
     MarkAllAsRead,
 }
 
@@ -41,13 +46,26 @@ impl SimpleComponent for InboxPage {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_margin_all: 15,
                 set_spacing: 10,
-                gtk::Button {
-                    set_label: "Mentions",
-                    connect_clicked => InboxInput::UpdateType(InboxType::Mentions),
-                },
-                gtk::Button {
+                gtk::ToggleButton {
                     set_label: "Replies",
                     connect_clicked => InboxInput::UpdateType(InboxType::Replies),
+                    #[watch]
+                    set_active: model.type_ == InboxType::Replies,
+                },
+                gtk::ToggleButton {
+                    set_label: "Mentions",
+                    connect_clicked => InboxInput::UpdateType(InboxType::Mentions),
+                    #[watch]
+                    set_active: model.type_ == InboxType::Mentions,
+                },
+                gtk::ToggleButton {
+                    set_label: "Private messages",
+                    connect_clicked => InboxInput::UpdateType(InboxType::PrivateMessages),
+                    #[watch]
+                    set_active: model.type_ == InboxType::PrivateMessages,
+                },
+                gtk::Box {
+                    set_hexpand: true,
                 },
                 gtk::ToggleButton {
                     set_active: false,
@@ -60,10 +78,25 @@ impl SimpleComponent for InboxPage {
                 }
             },
             gtk::ScrolledWindow {
-                #[local_ref]
-                mentions -> gtk::Box {
-                    set_vexpand: true,
-                    set_orientation: gtk::Orientation::Vertical,
+                match model.type_ {
+                    InboxType::PrivateMessages => {
+                        gtk::Box {
+                            #[local_ref]
+                            private_messages -> gtk::Box {
+                                set_vexpand: true,
+                                set_orientation: gtk::Orientation::Vertical,
+                            }
+                        }
+                    }
+                    _ => {
+                        gtk::Box {
+                            #[local_ref]
+                            mentions -> gtk::Box {
+                                set_vexpand: true,
+                                set_orientation: gtk::Orientation::Vertical,
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -75,13 +108,16 @@ impl SimpleComponent for InboxPage {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let mentions = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let private_messages = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let model = Self {
             mentions,
+            private_messages,
             page: 1,
             unread_only: false,
-            type_: InboxType::Mentions,
+            type_: InboxType::Replies,
         };
         let mentions = model.mentions.widget();
+        let private_messages = model.private_messages.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -93,26 +129,40 @@ impl SimpleComponent for InboxPage {
                 let page = self.page.clone();
                 let unread_only = self.unread_only.clone();
                 std::thread::spawn(move || {
-                    let comments = match type_ {
+                    let message = match type_ {
                         InboxType::Mentions => {
                             if let Ok(response) = api::user::get_mentions(page, unread_only) {
                                 // It's just a different object, but its contents are exactly the same
                                 let serialised = serde_json::to_string(&response.mentions).unwrap();
-                                serde_json::from_str(&serialised).ok()
+                                let mentions = serde_json::from_str(&serialised).ok();
+                                if let Some(mentions) = mentions {
+                                    Some(InboxInput::UpdateInbox(mentions))
+                                } else {
+                                    None
+                                }
                             } else {
                                 None
                             }
                         }
                         InboxType::Replies => {
                             if let Ok(response) = api::user::get_replies(page, unread_only) {
-                                Some(response.replies)
+                                Some(InboxInput::UpdateInbox(response.replies))
+                            } else {
+                                None
+                            }
+                        }
+                        InboxType::PrivateMessages => {
+                            if let Ok(response) =
+                                api::private_message::list_private_messages(unread_only, page)
+                            {
+                                Some(InboxInput::UpdatePrivateMessages(response.private_messages))
                             } else {
                                 None
                             }
                         }
                     };
-                    if let Some(comments) = comments {
-                        sender.input(InboxInput::UpdateInbox(comments))
+                    if let Some(message) = message {
+                        sender.input(message)
                     };
                 });
             }
@@ -128,6 +178,12 @@ impl SimpleComponent for InboxPage {
                 self.mentions.guard().clear();
                 for comment in comments {
                     self.mentions.guard().push_back(comment);
+                }
+            }
+            InboxInput::UpdatePrivateMessages(messages) => {
+                self.private_messages.guard().clear();
+                for message in messages {
+                    self.private_messages.guard().push_back(message);
                 }
             }
             InboxInput::MarkAllAsRead => {

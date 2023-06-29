@@ -3,6 +3,7 @@ use lemmy_api_common::lemmy_db_views_actor::structs::CommentReplyView;
 use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
+use crate::util;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
@@ -30,7 +31,7 @@ impl FactoryComponent for MentionRow {
     type Input = MentionRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = PostViewWidgets;
+    type Widgets = MentionRowWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 
@@ -47,6 +48,11 @@ impl FactoryComponent for MentionRow {
                 set_label: &self.comment.post.name,
                 add_css_class: "font-bold",
                 set_halign: gtk::Align::Start,
+                add_controller = gtk::GestureClick {
+                    connect_pressed[sender] => move |_, _, _, _| {
+                        sender.input(MentionRowMsg::OpenCommunity);
+                    }
+                },
             },
 
             gtk::Box {
@@ -92,6 +98,11 @@ impl FactoryComponent for MentionRow {
                     set_label: &self.comment.creator.name,
                     connect_clicked => MentionRowMsg::OpenPerson,
                 },
+
+                gtk::Label {
+                    set_margin_start: 10,
+                    set_label: &util::format_elapsed_time(self.comment.comment.published),
+                }
             },
 
             gtk::Label {
@@ -99,7 +110,6 @@ impl FactoryComponent for MentionRow {
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
                set_halign: gtk::Align::Start,
                set_use_markup: true,
-               set_selectable: true,
             },
 
             #[local_ref]

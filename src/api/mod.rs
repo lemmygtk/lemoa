@@ -9,6 +9,7 @@ pub mod community;
 pub mod moderation;
 pub mod post;
 pub mod posts;
+pub mod private_message;
 pub mod search;
 pub mod site;
 pub mod image;

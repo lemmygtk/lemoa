@@ -3,6 +3,12 @@ use lemmy_api_common::person::GetPersonDetailsResponse;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
+use crate::api;
+use crate::dialogs::editor::DialogMsg;
+use crate::dialogs::editor::EditorDialog;
+use crate::dialogs::editor::EditorOutput;
+use crate::dialogs::editor::EditorType;
+use crate::settings;
 use crate::util::get_web_image_msg;
 use crate::util::markdown_to_pango_markup;
 
@@ -12,11 +18,14 @@ pub struct ProfilePage {
     info: GetPersonDetailsResponse,
     avatar: Controller<WebImage>,
     posts: FactoryVecDeque<PostRow>,
+    editor_dialog: Controller<EditorDialog>,
 }
 
 #[derive(Debug)]
 pub enum ProfileInput {
     UpdatePerson(GetPersonDetailsResponse),
+    SendMessageRequest,
+    SendMessage(String),
 }
 
 #[relm4::component(pub)]
@@ -58,11 +67,16 @@ impl SimpleComponent for ProfilePage {
 
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} posts, ", model.info.person_view.counts.post_count),
+                        set_text: &format!("{} posts, {} comments", model.info.person_view.counts.post_count, model.info.person_view.counts.comment_count),
                     },
-                    gtk::Label {
-                        #[watch]
-                        set_text: &format!("{} comments", model.info.person_view.counts.comment_count),
+                    if settings::get_current_account().jwt.is_some() {
+                        gtk::Button {
+                            set_label: "Send message",
+                            connect_clicked => ProfileInput::SendMessageRequest,
+                            set_margin_start: 10,
+                        }
+                    } else {
+                        gtk::Box {}
                     },
                 },
 
@@ -84,10 +98,18 @@ impl SimpleComponent for ProfilePage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let editor_dialog = EditorDialog::builder()
+            .transient_for(root)
+            .launch(EditorType::PrivateMessage)
+            .forward(sender.input_sender(), |msg| match msg {
+                EditorOutput::CreateRequest(data, _) => ProfileInput::SendMessage(data.body),
+                _ => unreachable!(),
+            });
         let model = ProfilePage {
             info: init,
             avatar,
             posts,
+            editor_dialog,
         };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
@@ -106,6 +128,13 @@ impl SimpleComponent for ProfilePage {
                 for post in person.posts {
                     self.posts.guard().push_back(post);
                 }
+            }
+            ProfileInput::SendMessageRequest => self.editor_dialog.sender().emit(DialogMsg::Show),
+            ProfileInput::SendMessage(content) => {
+                let profile_id = self.info.person_view.person.id;
+                std::thread::spawn(move || {
+                    let _ = api::private_message::create_private_message(content, profile_id);
+                });
             }
         }
     }
