@@ -63,19 +63,6 @@ impl FactoryComponent for InstanceRow {
                     set_hexpand: true,
                 },
 
-                // gtk::Label {
-                //     set_label: &format!("{} subscribers, {} posts", self.instance.counts.subscribers, self.instance.counts.posts),
-                // },
-
-                gtk::Button {
-                    set_label: "Choose",
-                    connect_clicked => 
-                    {
-                        // println!("self.instance.domain: {}", self.instance.domain);
-                        InstanceRowMsg::OpenInstance
-                    },
-                },
-
             },
 
             gtk::Separator {}
