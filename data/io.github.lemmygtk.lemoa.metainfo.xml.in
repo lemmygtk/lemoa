@@ -46,4 +46,9 @@
   <update_contact>bnyro@tutanota.com</update_contact>
   <launchable type="desktop-id">@APP_ID@.desktop</launchable>
   <platform>GTK 4</platform>
+
+  <custom>
+    <value key="Purism::form_factor">workstation</value>
+    <value key="Purism::form_factor">mobile</value>
+  </custom>
 </component>
