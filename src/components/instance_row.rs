@@ -34,6 +34,13 @@ impl FactoryComponent for InstanceRow {
             set_margin_start: 10,
             set_vexpand: false,
 
+             add_controller = gtk::GestureClick {
+                connect_pressed[sender] => move |_, _, _, _| {
+                    sender.input(InstanceRowMsg::OpenInstance);
+                    }
+
+            },
+
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 10,
@@ -68,6 +75,7 @@ impl FactoryComponent for InstanceRow {
                         InstanceRowMsg::OpenInstance
                     },
                 },
+
             },
 
             gtk::Separator {}
