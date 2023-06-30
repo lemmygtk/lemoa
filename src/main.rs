@@ -459,6 +459,8 @@ impl SimpleComponent for App {
                 };
                 let message = match reqwest::Url::parse(&url_with_scheme) {
                     Ok(url) => {
+                        // clear the back queue to not mix up different instances
+                        self.back_queue.clear();
                         let mut current_account = settings::get_current_account();
                         let url = url.to_string();
                         // remove the "/" at the end of the url
