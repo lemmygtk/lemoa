@@ -26,6 +26,18 @@
   <url type="bugtracker">https://github.com/lemmygtk/lemoa/issues</url>
   <content_rating type="oars-1.0" />
   <releases>
+    <release version="0.2.0" date="2023-06-30">
+      <description>
+        <ul>
+          <li>Support for writing private messages</li>
+          <li>Inbox: support for private messages</li>
+          <li>Display the publish date for posts, comments and replies</li>
+          <li>Validate instance urls for more user convenience</li>
+          <li>List federated instances in instance selector</li>
+          <li>Remove 'View' buttons in favor of clicking the title</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2023-06-26">
         <description>
           <ul>
