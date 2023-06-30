@@ -1,14 +1,10 @@
+use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_schema::source::instance::Instance;
 use relm4::prelude::*;
-use gtk::prelude::*;
-use relm4_components::web_image::WebImage;
-
-use crate::util::get_web_image_url;
 
 #[derive(Debug)]
 pub struct InstanceRow {
     instance: Instance,
-    // instance_image: Controller<WebImage>,
 }
 
 #[derive(Debug)]
@@ -45,16 +41,6 @@ impl FactoryComponent for InstanceRow {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 10,
 
-                // if self.instance.instance.icon.is_some() {
-                //     gtk::Box {
-                //         set_hexpand: false,
-                //         #[local_ref]
-                //         // instance_image -> gtk::Box {}
-                //     }
-                // } else {
-                //     gtk::Box {}
-                // },
-
                 gtk::Label {
                     set_label: &self.instance.domain
                 },
@@ -74,19 +60,16 @@ impl FactoryComponent for InstanceRow {
     }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        // let instance_image= WebImage::builder().launch(get_web_image_url(value.instance.clone().icon)).detach();
-
         Self { instance: value }
     }
 
     fn init_widgets(
-            &mut self,
-            _index: &Self::Index,
-            root: &Self::Root,
-            _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
-            sender: FactorySender<Self>,
-        ) -> Self::Widgets {
-        // let instance_image = self.instance_image.widget();
+        &mut self,
+        _index: &Self::Index,
+        root: &Self::Root,
+        _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
+        sender: FactorySender<Self>,
+    ) -> Self::Widgets {
         let widgets = view_output!();
         widgets
     }
@@ -94,10 +77,10 @@ impl FactoryComponent for InstanceRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             InstanceRowMsg::OpenInstance => {
-                let mut instance_address =  String::new();
-                instance_address.push_str("https://");
-                instance_address.push_str(self.instance.domain.as_str());
-                sender.output(crate::AppMsg::DoneChoosingInstance(instance_address.clone()))
+                let instance_address = format!("https://{}", self.instance.domain);
+                sender.output(crate::AppMsg::DoneChoosingInstance(
+                    instance_address.clone(),
+                ))
             }
         }
     }

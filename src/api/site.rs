@@ -1,5 +1,4 @@
-use lemmy_api_common::site::{GetSiteResponse, GetSite};
-use reqwest::Error;
+use lemmy_api_common::site::{GetSite, GetSiteResponse};
 
 use crate::settings;
 
