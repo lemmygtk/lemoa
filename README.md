@@ -10,6 +10,11 @@ Native Gtk client for Lemmy (beta)
 
 If you don't use any of these platforms, consider [building the app from source](#Building).
 
+# Screenshots
+![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/community.png)
+![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/posts.png)
+![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/user.png)
+
 # Features
 
 - Listing trending posts
@@ -60,7 +65,7 @@ Not recommended: To only install the binary (can only be started with the termin
 ```sh
 cargo install --git https://github.com/lemmygtk/lemoa.git
 ```
-
+s
 You can then start the app via the terminal after adding cargo's bin directory to your PATH variable.
 
 # Development
@@ -74,3 +79,4 @@ cargo run
 # License
 
 Lemoa is licensed under the [**GNU General Public License**](https://www.gnu.org/licenses/gpl.html): You can use, study and share it as you want.
+shshoshots
