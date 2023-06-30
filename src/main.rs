@@ -10,6 +10,7 @@ use components::{
     community_page::{self, CommunityPage},
     community_row::CommunityRow,
     inbox_page::{InboxInput, InboxPage},
+    instances_page::{InstancePageInput, InstancesPage},
     post_page::{self, PostPage},
     post_row::PostRow,
     profile_page::{self, ProfilePage},
@@ -55,6 +56,7 @@ struct App {
     back_queue: Vec<AppMsg>,
     posts: FactoryVecDeque<PostRow>,
     communities: FactoryVecDeque<CommunityRow>,
+    instances_page: Controller<InstancesPage>,
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
     post_page: Controller<PostPage>,
@@ -179,27 +181,8 @@ impl SimpleComponent for App {
                     },
                 },
                 AppState::ChooseInstance => gtk::Box {
-                    set_hexpand: true,
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_spacing: 12,
-                    set_margin_all: 20,
-                    set_valign: gtk::Align::Center,
-                    set_halign: gtk::Align::Center,
-                    gtk::Label {
-                        set_text: "Please enter the URL of a valid lemmy instance",
-                    },
-                    #[name(instance_url)]
-                    gtk::Entry {
-                        set_tooltip_text: Some("Instance"),
-                    },
-                    gtk::Button {
-                        set_label: "Done",
-                        connect_clicked[sender, instance_url] => move |_| {
-                            let text = instance_url.text().as_str().to_string();
-                            instance_url.set_text("");
-                            sender.input(AppMsg::DoneChoosingInstance(text));
-                        },
-                    }
+                    #[local_ref]
+                    instances_page -> gtk::Box {}
                 },
                 AppState::Login => gtk::Box {
                     set_hexpand: true,
@@ -287,6 +270,7 @@ impl SimpleComponent for App {
                         }
                     }
                 }
+
                 AppState::Person => {
                     gtk::Box {
                         #[local_ref]
@@ -357,6 +341,9 @@ impl SimpleComponent for App {
         // initialize all controllers and factories
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let communities = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
+        let instances_page = InstancesPage::builder()
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
         let profile_page = ProfilePage::builder()
             .launch(default_person())
             .forward(sender.input_sender(), |msg| msg);
@@ -380,6 +367,7 @@ impl SimpleComponent for App {
             logged_in,
             posts,
             communities,
+            instances_page,
             profile_page,
             community_page,
             post_page,
@@ -401,6 +389,7 @@ impl SimpleComponent for App {
         // setup all widgets and different stack pages
         let posts_box = model.posts.widget();
         let communities_box = model.communities.widget();
+        let instances_page = model.instances_page.widget();
         let profile_page = model.profile_page.widget();
         let community_page = model.community_page.widget();
         let post_page = model.post_page.widget();
@@ -486,6 +475,9 @@ impl SimpleComponent for App {
             }
             AppMsg::ChooseInstance => {
                 self.state = AppState::ChooseInstance;
+                self.instances_page
+                    .sender()
+                    .emit(InstancePageInput::FetchInstances);
             }
             AppMsg::StartFetchPosts(type_, remove_previous) => {
                 self.current_posts_type = type_;
@@ -536,6 +528,7 @@ impl SimpleComponent for App {
                     sender.input(message);
                 });
             }
+
             AppMsg::DoneFetchCommunities(communities) => {
                 self.state = AppState::Communities;
                 if self.current_communities_page == 1 {

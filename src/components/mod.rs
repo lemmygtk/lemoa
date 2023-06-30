@@ -2,6 +2,8 @@ pub mod comment_row;
 pub mod community_page;
 pub mod community_row;
 pub mod inbox_page;
+pub mod instance_row;
+pub mod instances_page;
 pub mod mention_row;
 pub mod post_page;
 pub mod post_row;

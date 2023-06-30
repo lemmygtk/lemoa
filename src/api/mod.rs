@@ -6,13 +6,14 @@ pub mod auth;
 pub mod comment;
 pub mod communities;
 pub mod community;
-pub mod image;
 pub mod moderation;
 pub mod post;
 pub mod posts;
 pub mod private_message;
 pub mod search;
 pub mod site;
+pub mod image;
+pub mod instances;
 pub mod user;
 
 static API_VERSION: &str = "v3";
