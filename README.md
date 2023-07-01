@@ -76,6 +76,10 @@ Clone the repository and run
 cargo run
 ```
 
+# Credits
+- [Original Icon](https://game-icons.net/1x1/delapouite/rat.html) by [Delapouite](https://delapouite.com/) under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)
+- Modified icon with gradient by [Ategon](https://programming.dev/u/Ategon)
+
 # License
 
 Lemoa is licensed under the [**GNU General Public License**](https://www.gnu.org/licenses/gpl.html): You can use, study and share it as you want.
