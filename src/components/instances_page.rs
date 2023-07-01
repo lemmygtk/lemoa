@@ -2,7 +2,7 @@ use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_schema::source::instance::Instance;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
-use crate::api;
+use crate::{api, settings};
 
 use super::instance_row::InstanceRow;
 
@@ -11,15 +11,16 @@ pub struct InstancesPage {
 }
 
 #[derive(Debug)]
-pub enum InstancePageInput {
+pub enum InstancesPageInput {
     FetchInstances,
     DoneFetchInstances(Vec<Instance>),
+    SetInstance(String),
 }
 
 #[relm4::component(pub)]
 impl SimpleComponent for InstancesPage {
     type Init = ();
-    type Input = InstancePageInput;
+    type Input = InstancesPageInput;
     type Output = crate::AppMsg;
 
     view! {
@@ -64,7 +65,7 @@ impl SimpleComponent for InstancesPage {
                         connect_clicked[sender, instance_url] => move |_| {
                             let text = instance_url.text().as_str().to_string();
                             instance_url.set_text("");
-                            let _ = sender.output(crate::AppMsg::DoneChoosingInstance(text));
+                            sender.input(InstancesPageInput::SetInstance(text));
                         },
                     },
                 } -> {
@@ -79,7 +80,7 @@ impl SimpleComponent for InstancesPage {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let instances = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let model = Self { instances };
         let instances = model.instances.widget();
         let widgets = view_output!();
@@ -88,10 +89,10 @@ impl SimpleComponent for InstancesPage {
 
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
-            InstancePageInput::FetchInstances => {
+            InstancesPageInput::FetchInstances => {
                 std::thread::spawn(move || {
                     let message = match api::instances::fetch_instances() {
-                        Ok(instances) => Some(InstancePageInput::DoneFetchInstances(instances)),
+                        Ok(instances) => Some(InstancesPageInput::DoneFetchInstances(instances)),
                         Err(_err) => None,
                     };
                     if let Some(message) = message {
@@ -99,11 +100,39 @@ impl SimpleComponent for InstancesPage {
                     };
                 });
             }
-            InstancePageInput::DoneFetchInstances(instances) => {
+            InstancesPageInput::DoneFetchInstances(instances) => {
                 self.instances.guard().clear();
                 for instance in instances {
                     self.instances.guard().push_back(instance);
                 }
+            }
+            InstancesPageInput::SetInstance(instance_url) => {
+                if instance_url.trim().is_empty() {
+                    return;
+                }
+                let url_with_scheme = if instance_url.starts_with("http") {
+                    instance_url
+                } else {
+                    format!("https://{}", instance_url)
+                };
+                let message = match reqwest::Url::parse(&url_with_scheme) {
+                    Ok(url) => {
+                        // clear the back queue to not mix up different instances
+                        sender.output_sender().emit(crate::AppMsg::Logout);
+                        sender
+                            .output_sender()
+                            .emit(crate::AppMsg::UpdateState(crate::AppState::Loading));
+                        let mut current_account = settings::get_current_account();
+                        let url = url.to_string();
+                        // remove the "/" at the end of the url
+                        current_account.instance_url = url[0..url.len() - 1].to_string();
+                        current_account.jwt = None;
+                        settings::update_current_account(current_account);
+                        crate::AppMsg::StartFetchPosts(None, true)
+                    }
+                    Err(err) => crate::AppMsg::ShowMessage(err.to_string()),
+                };
+                sender.output_sender().emit(message);
             }
         }
     }

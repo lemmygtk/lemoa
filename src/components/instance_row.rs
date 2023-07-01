@@ -2,6 +2,8 @@ use gtk::prelude::*;
 use lemmy_api_common::lemmy_db_schema::source::instance::Instance;
 use relm4::prelude::*;
 
+use super::instances_page::InstancesPageInput;
+
 #[derive(Debug)]
 pub struct InstanceRow {
     instance: Instance,
@@ -16,10 +18,10 @@ pub enum InstanceRowMsg {
 impl FactoryComponent for InstanceRow {
     type Init = Instance;
     type Input = InstanceRowMsg;
-    type Output = crate::AppMsg;
+    type Output = InstancesPageInput;
     type CommandOutput = ();
     type Widgets = PostViewWidgets;
-    type ParentInput = crate::AppMsg;
+    type ParentInput = InstancesPageInput;
     type ParentWidget = gtk::Box;
 
     view! {
@@ -78,9 +80,7 @@ impl FactoryComponent for InstanceRow {
         match message {
             InstanceRowMsg::OpenInstance => {
                 let instance_address = format!("https://{}", self.instance.domain);
-                sender.output(crate::AppMsg::DoneChoosingInstance(
-                    instance_address.clone(),
-                ))
+                sender.output(InstancesPageInput::SetInstance(instance_address.clone()))
             }
         }
     }

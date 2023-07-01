@@ -10,7 +10,7 @@ use components::{
     communities_page::{CommunitiesPage, CommunitiesPageInput},
     community_page::{self, CommunityPage},
     inbox_page::{InboxInput, InboxPage},
-    instances_page::{InstancePageInput, InstancesPage},
+    instances_page::{InstancesPage, InstancesPageInput},
     post_page::{self, PostPage},
     post_row::PostRow,
     profile_page::{self, ProfilePage},
@@ -75,7 +75,6 @@ pub enum AppMsg {
     LoggedIn,
     Logout,
     ShowMessage(String),
-    DoneChoosingInstance(String),
     StartFetchPosts(Option<ListingType>, bool),
     DoneFetchPosts(Vec<PostView>),
     OpenCommunity(CommunityId),
@@ -363,38 +362,11 @@ impl SimpleComponent for App {
         }
 
         match msg {
-            AppMsg::DoneChoosingInstance(instance_url) => {
-                if instance_url.trim().is_empty() {
-                    return;
-                }
-                let url_with_scheme = if instance_url.starts_with("http") {
-                    instance_url
-                } else {
-                    format!("https://{}", instance_url)
-                };
-                let message = match reqwest::Url::parse(&url_with_scheme) {
-                    Ok(url) => {
-                        // clear the back queue to not mix up different instances
-                        self.back_queue.clear();
-                        let mut current_account = settings::get_current_account();
-                        let url = url.to_string();
-                        // remove the "/" at the end of the url
-                        current_account.instance_url = url[0..url.len() - 1].to_string();
-                        current_account.jwt = None;
-                        settings::update_current_account(current_account);
-                        self.state = AppState::Loading;
-                        self.logged_in = false;
-                        AppMsg::StartFetchPosts(None, true)
-                    }
-                    Err(err) => AppMsg::ShowMessage(err.to_string()),
-                };
-                sender.input(message);
-            }
             AppMsg::ChooseInstance => {
                 self.state = AppState::ChooseInstance;
                 self.instances_page
                     .sender()
-                    .emit(InstancePageInput::FetchInstances);
+                    .emit(InstancesPageInput::FetchInstances);
             }
             AppMsg::StartFetchPosts(type_, remove_previous) => {
                 self.current_posts_type = type_;
