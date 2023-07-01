@@ -133,7 +133,9 @@ impl SimpleComponent for CommunitiesPage {
                             sender.input(CommunitiesPageInput::DoneFetchCommunities(communities));
                         }
                         Err(err) => {
-                            let _ = sender.output(crate::AppMsg::ShowMessage(err.to_string()));
+                            sender
+                                .output_sender()
+                                .emit(crate::AppMsg::ShowMessage(err.to_string()));
                         }
                     };
                 });

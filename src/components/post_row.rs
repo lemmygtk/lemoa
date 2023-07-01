@@ -175,7 +175,9 @@ impl FactoryComponent for PostRow {
                 let post_id = self.post.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);
-                    let _ = sender.output(crate::AppMsg::StartFetchPosts(None, true));
+                    sender
+                        .output_sender()
+                        .emit(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
         }

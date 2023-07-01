@@ -204,7 +204,7 @@ impl SimpleComponent for EditorDialog {
                     true => EditorOutput::CreateRequest(post, self.type_),
                     false => EditorOutput::EditRequest(post, self.type_),
                 };
-                let _ = sender.output(message);
+                sender.output_sender().emit(message);
                 self.visible = false;
             }
             DialogMsg::UpdateType(type_, is_new) => {

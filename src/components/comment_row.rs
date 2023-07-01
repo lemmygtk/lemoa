@@ -169,7 +169,7 @@ impl FactoryComponent for CommentRow {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    let _ = sender.output(PostInput::PassAppMessage(
+                    sender.output_sender().emit(PostInput::PassAppMessage(
                         crate::AppMsg::StartFetchPosts(None, true),
                     ));
                 });

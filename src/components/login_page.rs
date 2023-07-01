@@ -91,7 +91,9 @@ impl SimpleComponent for LoginPage {
                 } else {
                     Some(totp_token)
                 };
-                let _ = sender.output(crate::AppMsg::UpdateState(crate::AppState::Loading));
+                sender
+                    .output_sender()
+                    .emit(crate::AppMsg::UpdateState(crate::AppState::Loading));
 
                 std::thread::spawn(move || {
                     let message = match api::auth::login(username, password, token) {
@@ -113,11 +115,13 @@ impl SimpleComponent for LoginPage {
                         }
                         Err(err) => crate::AppMsg::ShowMessage(err.to_string()),
                     };
-                    let _ = sender.output(message);
+                    sender.output_sender().emit(message);
                 });
             }
             LoginPageInput::Cancel => {
-                let _ = sender.output(crate::AppMsg::StartFetchPosts(None, true));
+                sender
+                    .output_sender()
+                    .emit(crate::AppMsg::StartFetchPosts(None, true));
             }
         }
     }
