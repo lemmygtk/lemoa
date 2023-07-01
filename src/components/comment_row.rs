@@ -29,8 +29,9 @@ pub struct CommentRow {
 pub enum CommentRowMsg {
     OpenPerson,
     DeleteComment,
-    OpenEditCommentDialog,
+    OpenEditor(bool),
     EditCommentRequest(EditorData),
+    CreateCommentRequest(EditorData),
     UpdateComment(CommentView),
 }
 
@@ -87,14 +88,24 @@ impl FactoryComponent for CommentRow {
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 10,
+
                 #[local_ref]
                 voting_row -> gtk::Box {},
+
+                if settings::get_current_account().jwt.is_some() {
+                    gtk::Button {
+                        set_icon_name: "mail-replied",
+                        connect_clicked => CommentRowMsg::OpenEditor(true),
+                    }
+                } else {
+                    gtk::Box {}
+                },
 
                 if self.comment.creator.id.0 == settings::get_current_account().id {
                     gtk::Button {
                         set_icon_name: "document-edit",
-                        connect_clicked => CommentRowMsg::OpenEditCommentDialog,
-                        set_margin_start: 5,
+                        connect_clicked => CommentRowMsg::OpenEditor(false),
                     }
                 } else {
                     gtk::Box {}
@@ -104,11 +115,10 @@ impl FactoryComponent for CommentRow {
                     gtk::Button {
                         set_icon_name: "edit-delete",
                         connect_clicked => CommentRowMsg::DeleteComment,
-                        set_margin_start: 10,
                     }
                 } else {
                     gtk::Box {}
-                }
+                },
             },
 
             gtk::Separator {}
@@ -133,7 +143,7 @@ impl FactoryComponent for CommentRow {
             sender.input_sender(),
             |msg| match msg {
                 EditorOutput::EditRequest(data, _) => CommentRowMsg::EditCommentRequest(data),
-                _ => unreachable!(),
+                EditorOutput::CreateRequest(data, _) => CommentRowMsg::CreateCommentRequest(data),
             },
         );
 
@@ -174,24 +184,28 @@ impl FactoryComponent for CommentRow {
                     ));
                 });
             }
-            CommentRowMsg::OpenEditCommentDialog => {
-                let data = EditorData {
-                    name: String::from(""),
-                    body: self.comment.comment.content.clone(),
-                    url: None,
-                    id: Some(self.comment.comment.id.0),
+            CommentRowMsg::OpenEditor(is_new) => {
+                let data = if is_new {
+                    EditorData::default()
+                } else {
+                    EditorData {
+                        name: String::from(""),
+                        body: self.comment.comment.content.clone(),
+                        url: None,
+                    }
                 };
                 let sender = self.comment_editor_dialog.sender();
                 sender.emit(DialogMsg::UpdateData(data));
-                sender.emit(DialogMsg::UpdateType(EditorType::Comment, false));
+                sender.emit(DialogMsg::UpdateType(EditorType::Comment, is_new));
                 sender.emit(DialogMsg::Show);
             }
             CommentRowMsg::UpdateComment(comment) => {
                 self.comment = comment;
             }
             CommentRowMsg::EditCommentRequest(data) => {
+                let id = self.comment.comment.id;
                 std::thread::spawn(move || {
-                    let message = match api::comment::edit_comment(data.body, data.id.unwrap()) {
+                    let message = match api::comment::edit_comment(data.body, id) {
                         Ok(comment) => Some(CommentRowMsg::UpdateComment(comment.comment_view)),
                         Err(err) => {
                             println!("{}", err.to_string());
@@ -200,6 +214,19 @@ impl FactoryComponent for CommentRow {
                     };
                     if let Some(message) = message {
                         sender.input(message)
+                    };
+                });
+            }
+            CommentRowMsg::CreateCommentRequest(data) => {
+                let post_id = self.comment.comment.post_id;
+                let parent_id = self.comment.comment.id;
+                std::thread::spawn(move || {
+                    match api::comment::create_comment(post_id, data.body, Some(parent_id))
+                    {
+                        Ok(_comment) => {}
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                        }
                     };
                 });
             }

@@ -6,14 +6,14 @@ use lemmy_api_common::{
 use crate::settings;
 
 pub fn create_comment(
-    post_id: i32,
+    post_id: PostId,
     content: String,
-    parent_id: Option<i32>,
+    parent_id: Option<CommentId>,
 ) -> Result<CommentResponse, reqwest::Error> {
     let params = CreateComment {
-        post_id: PostId(post_id),
+        post_id,
         content,
-        parent_id: parent_id.map(CommentId),
+        parent_id,
         auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
@@ -30,10 +30,10 @@ pub fn like_comment(comment_id: CommentId, score: i16) -> Result<CommentResponse
     super::post("/comment/like", &params)
 }
 
-pub fn edit_comment(body: String, comment_id: i32) -> Result<CommentResponse, reqwest::Error> {
+pub fn edit_comment(body: String, comment_id: CommentId) -> Result<CommentResponse, reqwest::Error> {
     let params = EditComment {
         content: Some(body),
-        comment_id: CommentId(comment_id),
+        comment_id,
         auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };

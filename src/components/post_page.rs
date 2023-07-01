@@ -303,7 +303,7 @@ impl SimpleComponent for PostPage {
                 self.comments.guard().push_front(comment);
             }
             PostInput::CreateCommentRequest(post) => {
-                let id = self.info.post_view.post.id.0;
+                let id = self.info.post_view.post.id;
                 std::thread::spawn(move || {
                     let message = match api::comment::create_comment(id, post.body, None) {
                         Ok(comment) => Some(PostInput::CreatedComment(comment.comment_view)),
@@ -340,8 +340,7 @@ impl SimpleComponent for PostPage {
                         .body
                         .clone()
                         .unwrap_or(String::from("")),
-                    url: reqwest::Url::parse(&url).ok(),
-                    id: None,
+                    url: reqwest::Url::parse(&url).ok()
                 };
                 let sender = self.create_comment_dialog.sender();
                 sender.emit(DialogMsg::UpdateData(data));

@@ -10,8 +10,7 @@ use crate::api;
 pub struct EditorData {
     pub name: String,
     pub body: String,
-    pub url: Option<reqwest::Url>,
-    pub id: Option<i32>,
+    pub url: Option<reqwest::Url>
 }
 
 pub struct EditorDialog {
@@ -21,8 +20,6 @@ pub struct EditorDialog {
     name_buffer: gtk::EntryBuffer,
     url_buffer: gtk::EntryBuffer,
     body_buffer: gtk::TextBuffer,
-    // Optional field to temporarily store the post or comment id
-    id: Option<i32>,
     window: gtk::Window,
 }
 
@@ -172,7 +169,6 @@ impl SimpleComponent for EditorDialog {
             name_buffer,
             url_buffer,
             body_buffer,
-            id: None,
             window,
         };
         let widgets = view_output!();
@@ -194,12 +190,7 @@ impl SimpleComponent for EditorDialog {
                 let (start, end) = &self.body_buffer.bounds();
                 let body = self.body_buffer.text(start, end, true).to_string();
                 let url = reqwest::Url::parse(&url).ok();
-                let post = EditorData {
-                    name,
-                    body,
-                    url,
-                    id: self.id,
-                };
+                let post = EditorData { name, body, url };
                 let message = match self.is_new {
                     true => EditorOutput::CreateRequest(post, self.type_),
                     false => EditorOutput::EditRequest(post, self.type_),
