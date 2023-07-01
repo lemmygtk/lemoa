@@ -33,10 +33,11 @@ use relm4::{
     prelude::*,
     set_global_css,
 };
-use settings::get_current_account;
+
+use crate::components::login_page::LoginPage;
 
 #[derive(Debug, Clone, Copy)]
-enum AppState {
+pub enum AppState {
     Loading,
     Posts,
     ChooseInstance,
@@ -60,6 +61,7 @@ struct App {
     communities_page: Controller<CommunitiesPage>,
     post_page: Controller<PostPage>,
     inbox_page: Controller<InboxPage>,
+    login_page: Controller<LoginPage>,
     logged_in: bool,
     current_posts_type: Option<ListingType>,
     current_posts_page: i64,
@@ -70,7 +72,6 @@ struct App {
 pub enum AppMsg {
     ChooseInstance,
     ShowLogin,
-    Login(String, String, String),
     LoggedIn,
     Logout,
     ShowMessage(String),
@@ -86,7 +87,7 @@ pub enum AppMsg {
     OpenInbox,
     OpenCommunities,
     PopBackStack,
-    ShowAbout,
+    UpdateState(AppState),
 }
 
 #[relm4::component]
@@ -174,52 +175,8 @@ impl SimpleComponent for App {
                     instances_page -> gtk::Box {}
                 },
                 AppState::Login => gtk::Box {
-                    set_hexpand: true,
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_spacing: 12,
-                    set_margin_all: 20,
-                    set_valign: gtk::Align::Center,
-                    set_hexpand: true,
-
-                    gtk::Label {
-                        set_text: "Login",
-                        add_css_class: "font-bold",
-                    },
-                    #[name(username)]
-                    gtk::Entry {
-                        set_placeholder_text: Some("Username or E-Mail"),
-                    },
-                    #[name(password)]
-                    gtk::PasswordEntry {
-                        set_placeholder_text: Some("Password"),
-                        set_show_peek_icon: true,
-                    },
-                    #[name(totp_token)]
-                    gtk::Entry {
-                        set_placeholder_text: Some("Totp token (Optional)"),
-                    },
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
-                        set_halign: gtk::Align::End,
-
-                        gtk::Button {
-                            set_label: "Cancel",
-                            connect_clicked => AppMsg::StartFetchPosts(None, true),
-                            set_margin_end: 10,
-                        },
-                        gtk::Button {
-                            set_label: "Login",
-                            connect_clicked[sender, username, password, totp_token] => move |_| {
-                                let username_text = username.text().as_str().to_string();
-                                username.set_text("");
-                                let password_text = password.text().as_str().to_string();
-                                password.set_text("");
-                                let totp_token_text = totp_token.text().as_str().to_string();
-                                totp_token.set_text("");
-                                sender.input(AppMsg::Login(username_text, password_text, totp_token_text));
-                            },
-                        },
-                    }
+                    #[local_ref]
+                    login_page -> gtk::Box {}
                 },
                 AppState::Communities => gtk::Box {
                     #[local_ref]
@@ -316,6 +273,9 @@ impl SimpleComponent for App {
         let about_dialog = AboutDialog::builder()
             .launch(root.toplevel_window().unwrap())
             .detach();
+        let login_page = LoginPage::builder()
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
 
         let model = App {
             state,
@@ -328,6 +288,7 @@ impl SimpleComponent for App {
             post_page,
             inbox_page,
             communities_page,
+            login_page,
             message: None,
             current_posts_type: None,
             current_posts_page: 1,
@@ -347,6 +308,7 @@ impl SimpleComponent for App {
         let post_page = model.post_page.widget();
         let inbox_page = model.inbox_page.widget();
         let communities_page = model.communities_page.widget();
+        let login_page = model.login_page.widget();
 
         let widgets = view_output!();
 
@@ -441,6 +403,10 @@ impl SimpleComponent for App {
                 } else {
                     self.current_posts_page + 1
                 };
+                // show the loading indicator if it's the first page
+                if page == 1 {
+                    self.state = AppState::Loading;
+                }
                 self.current_posts_page = page;
                 std::thread::spawn(move || {
                     let message = match api::posts::list_posts(page, None, type_) {
@@ -521,39 +487,6 @@ impl SimpleComponent for App {
             AppMsg::ShowLogin => {
                 self.state = AppState::Login;
             }
-            AppMsg::Login(username, password, totp_token) => {
-                if get_current_account().instance_url.is_empty() {
-                    return;
-                }
-                let token = if totp_token.is_empty() {
-                    None
-                } else {
-                    Some(totp_token)
-                };
-                self.state = AppState::Loading;
-                std::thread::spawn(move || {
-                    let message = match api::auth::login(username, password, token) {
-                        Ok(login) => {
-                            if let Some(token) = login.jwt {
-                                let mut account = settings::get_current_account();
-                                account.jwt = Some(token);
-                                settings::update_current_account(account.clone());
-                                if let Ok(site) = api::site::fetch_site() {
-                                    let user = site.my_user.unwrap().local_user_view.person;
-                                    account.name = user.name;
-                                    account.id = user.id.0;
-                                    settings::update_current_account(account);
-                                }
-                                AppMsg::LoggedIn
-                            } else {
-                                AppMsg::ShowMessage("Wrong credentials!".to_string())
-                            }
-                        }
-                        Err(err) => AppMsg::ShowMessage(err.to_string()),
-                    };
-                    sender.input(message);
-                });
-            }
             AppMsg::Logout => {
                 let mut account = settings::get_current_account();
                 account.jwt = None;
@@ -570,6 +503,7 @@ impl SimpleComponent for App {
             }
             AppMsg::LoggedIn => {
                 self.logged_in = true;
+                self.back_queue.clear();
                 sender.input(AppMsg::StartFetchPosts(None, true));
             }
             AppMsg::PopBackStack => {
@@ -581,7 +515,9 @@ impl SimpleComponent for App {
                     self.back_queue.remove(self.back_queue.len() - 1);
                 }
             }
-            AppMsg::ShowAbout => {}
+            AppMsg::UpdateState(state) => {
+                self.state = state;
+            }
         }
     }
 }
