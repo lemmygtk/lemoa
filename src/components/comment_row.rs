@@ -14,7 +14,7 @@ use crate::util;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
-use super::post_page::PostInput;
+use super::post_page::PostPageInput;
 use super::voting_row::VotingRowModel;
 use super::voting_row::VotingStats;
 
@@ -39,10 +39,10 @@ pub enum CommentRowMsg {
 impl FactoryComponent for CommentRow {
     type Init = CommentView;
     type Input = CommentRowMsg;
-    type Output = PostInput;
+    type Output = PostPageInput;
     type CommandOutput = ();
     type Widgets = PostViewWidgets;
-    type ParentInput = PostInput;
+    type ParentInput = PostPageInput;
     type ParentWidget = gtk::Box;
 
     view! {
@@ -171,7 +171,7 @@ impl FactoryComponent for CommentRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             CommentRowMsg::OpenPerson => {
-                sender.output(PostInput::PassAppMessage(crate::AppMsg::OpenPerson(
+                sender.output(PostPageInput::PassAppMessage(crate::AppMsg::OpenPerson(
                     self.comment.creator.id.clone(),
                 )));
             }
@@ -179,7 +179,7 @@ impl FactoryComponent for CommentRow {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    sender.output_sender().emit(PostInput::PassAppMessage(
+                    sender.output_sender().emit(PostPageInput::PassAppMessage(
                         crate::AppMsg::StartFetchPosts(None, true),
                     ));
                 });
@@ -223,7 +223,9 @@ impl FactoryComponent for CommentRow {
                 std::thread::spawn(move || {
                     match api::comment::create_comment(post_id, data.body, Some(parent_id))
                     {
-                        Ok(_comment) => {}
+                        Ok(comment) => {
+                            sender.output_sender().emit(PostPageInput::CreatedComment(comment.comment_view));
+                        }
                         Err(err) => {
                             println!("{}", err.to_string());
                         }

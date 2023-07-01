@@ -453,7 +453,7 @@ impl SimpleComponent for App {
             AppMsg::DoneFetchPost(post) => {
                 self.post_page
                     .sender()
-                    .emit(post_page::PostInput::UpdatePost(post));
+                    .emit(post_page::PostPageInput::UpdatePost(post));
                 self.state = AppState::Post;
             }
             AppMsg::ShowLogin => {

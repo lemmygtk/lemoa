@@ -30,7 +30,7 @@ pub struct PostPage {
 }
 
 #[derive(Debug)]
-pub enum PostInput {
+pub enum PostPageInput {
     UpdatePost(GetPostResponse),
     DoneFetchComments(Vec<CommentView>),
     OpenPerson,
@@ -49,7 +49,7 @@ pub enum PostInput {
 #[relm4::component(pub)]
 impl SimpleComponent for PostPage {
     type Init = GetPostResponse;
-    type Input = PostInput;
+    type Input = PostPageInput;
     type Output = crate::AppMsg;
 
     view! {
@@ -102,7 +102,7 @@ impl SimpleComponent for PostPage {
                     gtk::Button {
                         #[watch]
                         set_label: &model.info.post_view.creator.name,
-                        connect_clicked => PostInput::OpenPerson,
+                        connect_clicked => PostPageInput::OpenPerson,
                     },
 
                     gtk::Label {
@@ -122,7 +122,7 @@ impl SimpleComponent for PostPage {
                     gtk::Button {
                         #[watch]
                         set_label: &model.info.community_view.community.title,
-                        connect_clicked => PostInput::OpenCommunity,
+                        connect_clicked => PostPageInput::OpenCommunity,
                     },
 
                     gtk::Label {
@@ -136,13 +136,13 @@ impl SimpleComponent for PostPage {
 
                     gtk::Button {
                         set_label: "View",
-                        connect_clicked => PostInput::OpenLink,
+                        connect_clicked => PostPageInput::OpenLink,
                     },
 
                     if model.info.post_view.creator.id.0 == settings::get_current_account().id {
                         gtk::Button {
                             set_icon_name: "document-edit",
-                            connect_clicked => PostInput::OpenEditPostDialog,
+                            connect_clicked => PostPageInput::OpenEditPostDialog,
                             set_margin_start: 5,
                         }
                     } else {
@@ -152,7 +152,7 @@ impl SimpleComponent for PostPage {
                     if model.info.post_view.creator.id.0 == settings::get_current_account().id {
                         gtk::Button {
                             set_icon_name: "edit-delete",
-                            connect_clicked => PostInput::DeletePost,
+                            connect_clicked => PostPageInput::DeletePost,
                             set_margin_start: 5,
                         }
                     } else {
@@ -178,7 +178,7 @@ impl SimpleComponent for PostPage {
                         gtk::Button {
                             set_label: "Comment",
                             set_margin_start: 10,
-                            connect_clicked => PostInput::OpenCreateCommentDialog,
+                            connect_clicked => PostPageInput::OpenCreateCommentDialog,
                         }
                     } else {
                         gtk::Box {}
@@ -208,8 +208,8 @@ impl SimpleComponent for PostPage {
             .transient_for(root)
             .launch(EditorType::Comment)
             .forward(sender.input_sender(), |msg| match msg {
-                EditorOutput::CreateRequest(comment, _) => PostInput::CreateCommentRequest(comment),
-                EditorOutput::EditRequest(post, _) => PostInput::EditPostRequest(post),
+                EditorOutput::CreateRequest(comment, _) => PostPageInput::CreateCommentRequest(comment),
+                EditorOutput::EditRequest(post, _) => PostPageInput::EditPostRequest(post),
             });
         let voting_row = VotingRowModel::builder()
             .launch(VotingStats::default())
@@ -236,7 +236,7 @@ impl SimpleComponent for PostPage {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            PostInput::UpdatePost(post) => {
+            PostPageInput::UpdatePost(post) => {
                 self.info = post.clone();
 
                 self.image
@@ -259,28 +259,28 @@ impl SimpleComponent for PostPage {
                     }
                     let comments = api::post::get_comments(post.post_view.post.id);
                     if let Ok(comments) = comments {
-                        sender.input(PostInput::DoneFetchComments(comments));
+                        sender.input(PostPageInput::DoneFetchComments(comments));
                     }
                 });
             }
-            PostInput::DoneFetchComments(comments) => {
+            PostPageInput::DoneFetchComments(comments) => {
                 for comment in comments {
                     self.comments.guard().push_back(comment);
                 }
             }
-            PostInput::OpenPerson => {
+            PostPageInput::OpenPerson => {
                 let person_id = self.info.post_view.creator.id.clone();
                 sender
                     .output_sender()
                     .emit(crate::AppMsg::OpenPerson(person_id));
             }
-            PostInput::OpenCommunity => {
+            PostPageInput::OpenCommunity => {
                 let community_id = self.info.community_view.community.id.clone();
                 sender
                     .output_sender()
                     .emit(crate::AppMsg::OpenCommunity(community_id));
             }
-            PostInput::OpenLink => {
+            PostPageInput::OpenLink => {
                 let post = self.info.post_view.post.clone();
                 let mut link = get_web_image_url(post.url);
                 if link.is_empty() {
@@ -294,19 +294,19 @@ impl SimpleComponent for PostPage {
                 }
                 gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
             }
-            PostInput::OpenCreateCommentDialog => {
+            PostPageInput::OpenCreateCommentDialog => {
                 let sender = self.create_comment_dialog.sender();
                 sender.emit(DialogMsg::UpdateType(EditorType::Comment, true));
                 sender.emit(DialogMsg::Show);
             }
-            PostInput::CreatedComment(comment) => {
+            PostPageInput::CreatedComment(comment) => {
                 self.comments.guard().push_front(comment);
             }
-            PostInput::CreateCommentRequest(post) => {
+            PostPageInput::CreateCommentRequest(post) => {
                 let id = self.info.post_view.post.id;
                 std::thread::spawn(move || {
                     let message = match api::comment::create_comment(id, post.body, None) {
-                        Ok(comment) => Some(PostInput::CreatedComment(comment.comment_view)),
+                        Ok(comment) => Some(PostPageInput::CreatedComment(comment.comment_view)),
                         Err(err) => {
                             println!("{}", err.to_string());
                             None
@@ -317,7 +317,7 @@ impl SimpleComponent for PostPage {
                     };
                 });
             }
-            PostInput::DeletePost => {
+            PostPageInput::DeletePost => {
                 let post_id = self.info.post_view.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);
@@ -326,7 +326,7 @@ impl SimpleComponent for PostPage {
                         .emit(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
-            PostInput::OpenEditPostDialog => {
+            PostPageInput::OpenEditPostDialog => {
                 let url = match self.info.post_view.post.url.clone() {
                     Some(url) => url.to_string(),
                     None => String::from(""),
@@ -347,11 +347,11 @@ impl SimpleComponent for PostPage {
                 sender.emit(DialogMsg::UpdateType(EditorType::Post, false));
                 sender.emit(DialogMsg::Show);
             }
-            PostInput::EditPostRequest(post) => {
+            PostPageInput::EditPostRequest(post) => {
                 let id = self.info.post_view.post.id.0;
                 std::thread::spawn(move || {
                     let message = match api::post::edit_post(post.name, post.url, post.body, id) {
-                        Ok(post) => Some(PostInput::DoneEditPost(post.post_view)),
+                        Ok(post) => Some(PostPageInput::DoneEditPost(post.post_view)),
                         Err(err) => {
                             println!("{}", err.to_string());
                             None
@@ -362,10 +362,10 @@ impl SimpleComponent for PostPage {
                     };
                 });
             }
-            PostInput::DoneEditPost(post) => {
+            PostPageInput::DoneEditPost(post) => {
                 self.info.post_view = post;
             }
-            PostInput::PassAppMessage(message) => {
+            PostPageInput::PassAppMessage(message) => {
                 sender.output_sender().emit(message);
             }
         }
