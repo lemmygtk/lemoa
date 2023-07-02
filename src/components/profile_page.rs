@@ -13,11 +13,15 @@ use crate::util::get_web_image_msg;
 use crate::util::markdown_to_pango_markup;
 
 use super::post_row::PostRow;
+use super::community_row::CommunityRow;
+use super::comment_row::CommentRow;
 
 pub struct ProfilePage {
     info: GetPersonDetailsResponse,
     avatar: Controller<WebImage>,
     posts: FactoryVecDeque<PostRow>,
+    comments: FactoryVecDeque<CommentRow>,
+    communities: FactoryVecDeque<CommunityRow>,
     editor_dialog: Controller<EditorDialog>,
 }
 
@@ -82,9 +86,36 @@ impl SimpleComponent for ProfilePage {
 
                 gtk::Separator {},
 
-                #[local_ref]
-                posts -> gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
+                gtk::StackSwitcher {
+                    set_stack: Some(&stack),
+                },
+
+                #[name(stack)]
+                gtk::Stack {
+                    add_child = &gtk::Box {
+                        #[local_ref]
+                        posts -> gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                        }
+                    } -> {
+                        set_title: "Posts",
+                    },
+                    add_child = &gtk::Box {
+                        #[local_ref]
+                        comments -> gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                        }
+                    } -> {
+                        set_title: "Comments",
+                    },
+                    add_child = &gtk::Box {
+                        #[local_ref]
+                        communities -> gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                        }
+                    } -> {
+                        set_title: "Moderates",
+                    },
                 }
             }
 
@@ -98,6 +129,8 @@ impl SimpleComponent for ProfilePage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let communities = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let editor_dialog = EditorDialog::builder()
             .transient_for(root)
             .launch(EditorType::PrivateMessage)
@@ -109,10 +142,14 @@ impl SimpleComponent for ProfilePage {
             info: init,
             avatar,
             posts,
+            comments,
+            communities,
             editor_dialog,
         };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
+        let comments = model.comments.widget();
+        let communities = model.communities.widget();
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
@@ -124,9 +161,16 @@ impl SimpleComponent for ProfilePage {
                 self.info = person.clone();
                 self.avatar
                     .emit(get_web_image_msg(person.person_view.person.avatar));
+
                 self.posts.guard().clear();
+                self.comments.guard().clear();
+                self.communities.guard().clear();
+
                 for post in person.posts {
                     self.posts.guard().push_back(post);
+                }
+                for comment in person.comments {
+                    self.comments.guard().push_back(comment);
                 }
             }
             ProfileInput::SendMessageRequest => self.editor_dialog.sender().emit(DialogMsg::Show),

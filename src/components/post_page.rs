@@ -201,7 +201,7 @@ impl SimpleComponent for PostPage {
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let image = WebImage::builder().launch("".to_string()).detach();
-        let comments = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
+        let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let creator_avatar = WebImage::builder().launch("".to_string()).detach();
         let community_avatar = WebImage::builder().launch("".to_string()).detach();
         let dialog = EditorDialog::builder()

@@ -39,10 +39,10 @@ pub enum CommentRowMsg {
 impl FactoryComponent for CommentRow {
     type Init = CommentView;
     type Input = CommentRowMsg;
-    type Output = PostPageInput;
+    type Output = crate::AppMsg;
     type CommandOutput = ();
     type Widgets = PostViewWidgets;
-    type ParentInput = PostPageInput;
+    type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 
     view! {
@@ -171,17 +171,13 @@ impl FactoryComponent for CommentRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             CommentRowMsg::OpenPerson => {
-                sender.output(PostPageInput::PassAppMessage(crate::AppMsg::OpenPerson(
-                    self.comment.creator.id.clone(),
-                )));
+                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id.clone()));
             }
             CommentRowMsg::DeleteComment => {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    sender.output_sender().emit(PostPageInput::PassAppMessage(
-                        crate::AppMsg::StartFetchPosts(None, true),
-                    ));
+                    sender.output_sender().emit(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
             CommentRowMsg::OpenEditor(is_new) => {
@@ -223,8 +219,8 @@ impl FactoryComponent for CommentRow {
                 std::thread::spawn(move || {
                     match api::comment::create_comment(post_id, data.body, Some(parent_id))
                     {
-                        Ok(comment) => {
-                            sender.output_sender().emit(PostPageInput::CreatedComment(comment.comment_view));
+                        Ok(_comment) => {
+                            // TODO sender.output_sender().emit(PostPageInput::CreatedComment(comment.comment_view));
                         }
                         Err(err) => {
                             println!("{}", err.to_string());
