@@ -49,9 +49,11 @@ impl SimpleComponent for ProfilePage {
 
                 #[local_ref]
                 avatar -> gtk::Box {
-                    set_size_request: (100, 100),
+                    set_size_request: (150, 150),
                     set_margin_bottom: 20,
                     set_margin_top: 20,
+                    #[watch]
+                    set_visible: model.info.person_view.person.avatar.is_some(),
                 },
                 gtk::Label {
                     #[watch]
@@ -75,15 +77,12 @@ impl SimpleComponent for ProfilePage {
                         #[watch]
                         set_text: &format!("{} posts, {} comments", model.info.person_view.counts.post_count, model.info.person_view.counts.comment_count),
                     },
-                    if settings::get_current_account().jwt.is_some() {
-                        gtk::Button {
-                            set_label: "Send message",
-                            connect_clicked => ProfileInput::SendMessageRequest,
-                            set_margin_start: 10,
-                        }
-                    } else {
-                        gtk::Box {}
-                    },
+                    gtk::Button {
+                        set_label: "Send message",
+                        connect_clicked => ProfileInput::SendMessageRequest,
+                        set_margin_start: 10,
+                        set_visible: settings::get_current_account().jwt.is_some(),
+                    }
                 },
 
                 gtk::Separator {},

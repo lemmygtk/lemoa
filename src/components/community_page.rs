@@ -83,39 +83,37 @@ impl SimpleComponent for CommunityPage {
                     },
                 },
 
-                if settings::get_current_account().jwt.is_some() {
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
-                        set_halign: gtk::Align::Center,
-                        set_margin_top: 10,
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_halign: gtk::Align::Center,
+                    set_margin_top: 10,
+                    #[watch]
+                    set_visible: settings::get_current_account().jwt.is_some(),
 
-                        match model.info.subscribed {
-                            SubscribedType::Subscribed => {
-                                gtk::Button {
-                                    set_label: "Unsubscribe",
-                                    connect_clicked => CommunityInput::ToggleSubscription,
-                                }
+                    match model.info.subscribed {
+                        SubscribedType::Subscribed => {
+                            gtk::Button {
+                                set_label: "Unsubscribe",
+                                connect_clicked => CommunityInput::ToggleSubscription,
                             }
-                            SubscribedType::NotSubscribed => {
-                                gtk::Button {
-                                    set_label: "Subscribe",
-                                    connect_clicked => CommunityInput::ToggleSubscription,
-                                }
-                            }
-                            SubscribedType::Pending => {
-                                gtk::Label {
-                                    set_label: "Subscription pending",
-                                }
-                            }
-                        },
-                        gtk::Button {
-                            set_label: "Create post",
-                            set_margin_start: 10,
-                            connect_clicked => CommunityInput::OpenCreatePostDialog,
                         }
+                        SubscribedType::NotSubscribed => {
+                            gtk::Button {
+                                set_label: "Subscribe",
+                                connect_clicked => CommunityInput::ToggleSubscription,
+                            }
+                        }
+                        SubscribedType::Pending => {
+                            gtk::Label {
+                                set_label: "Subscription pending",
+                            }
+                        }
+                    },
+                    gtk::Button {
+                        set_label: "Create post",
+                        set_margin_start: 10,
+                        connect_clicked => CommunityInput::OpenCreatePostDialog,
                     }
-                } else {
-                    gtk::Box {}
                 },
 
                 gtk::Separator {

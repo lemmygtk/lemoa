@@ -43,17 +43,11 @@ impl FactoryComponent for ModeratesRow {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 10,
 
-                if self.community.community.icon.is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        community_image -> gtk::Box {
-                            set_height_request: 35,
-                            set_width_request: 35,
-                        }
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                community_image -> gtk::Box {
+                    set_size_request: (35, 35),
+                    set_hexpand: false,
+                    set_visible: self.community.community.icon.is_some(),
                 },
 
                 gtk::Label {

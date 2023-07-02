@@ -59,18 +59,13 @@ impl FactoryComponent for MentionRow {
                 gtk::Label {
                     set_label: "in",
                 },
-                if self.comment.community.icon.clone().is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        set_margin_start: 10,
-                        set_margin_end: 10,
-                        #[local_ref]
-                        community_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                community_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_margin_start: 10,
+                    set_margin_end: 10,
+                    set_visible: self.comment.community.icon.clone().is_some(),
                 },
-
                 gtk::Button {
                     set_label: &self.comment.community.title,
                     connect_clicked => MentionRowMsg::OpenCommunity,
@@ -83,14 +78,10 @@ impl FactoryComponent for MentionRow {
                 set_margin_top: 10,
                 set_vexpand: false,
 
-                if self.comment.creator.avatar.is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        creator_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                creator_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_visible: self.comment.creator.avatar.is_some(),
                 },
 
                 gtk::Button {

@@ -56,14 +56,10 @@ impl FactoryComponent for CommentRow {
                 set_spacing: 10,
                 set_vexpand: false,
 
-                if self.comment.creator.avatar.is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        community_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                community_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_visible: self.comment.creator.avatar.is_some(),
                 },
 
                 gtk::Button {
@@ -91,32 +87,24 @@ impl FactoryComponent for CommentRow {
                 #[local_ref]
                 voting_row -> gtk::Box {},
 
-                if settings::get_current_account().jwt.is_some() {
-                    gtk::Button {
-                        set_icon_name: "mail-replied",
-                        connect_clicked => CommentRowMsg::OpenEditor(true),
-                    }
-                } else {
-                    gtk::Box {}
+                gtk::Button {
+                    set_icon_name: "mail-replied",
+                    connect_clicked => CommentRowMsg::OpenEditor(true),
+                    #[watch]
+                    set_visible: settings::get_current_account().jwt.is_some(),
                 },
 
-                if self.comment.creator.id.0 == settings::get_current_account().id {
-                    gtk::Button {
-                        set_icon_name: "document-edit",
-                        connect_clicked => CommentRowMsg::OpenEditor(false),
-                    }
-                } else {
-                    gtk::Box {}
+                gtk::Button {
+                    set_icon_name: "document-edit",
+                    connect_clicked => CommentRowMsg::OpenEditor(false),
+                    set_visible: self.comment.creator.id.0 == settings::get_current_account().id,
                 },
 
-                if self.comment.creator.id.0 == settings::get_current_account().id {
-                    gtk::Button {
-                        set_icon_name: "edit-delete",
-                        connect_clicked => CommentRowMsg::DeleteComment,
-                    }
-                } else {
-                    gtk::Box {}
-                },
+                gtk::Button {
+                    set_icon_name: "edit-delete",
+                    connect_clicked => CommentRowMsg::DeleteComment,
+                    set_visible: self.comment.creator.id.0 == settings::get_current_account().id,
+                }
             },
 
             gtk::Separator {}

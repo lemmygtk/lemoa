@@ -43,14 +43,10 @@ impl FactoryComponent for CommunityRow {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 10,
 
-                if self.community.community.icon.is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        community_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                community_image -> gtk::Box {
+                    set_visible: self.community.community.icon.is_some(),
+                    set_hexpand: false,
                 },
 
                 gtk::Label {

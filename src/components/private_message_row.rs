@@ -40,14 +40,10 @@ impl FactoryComponent for PrivateMessageRow {
                 set_vexpand: false,
                 set_hexpand: true,
 
-                if self.message.creator.avatar.is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        creator_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                creator_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_visible: self.message.creator.avatar.is_some(),
                 },
 
                 gtk::Button {

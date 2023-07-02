@@ -64,6 +64,8 @@ impl SimpleComponent for PostPage {
                     set_height_request: 400,
                     set_margin_bottom: 20,
                     set_margin_top: 20,
+                    #[watch]
+                    set_visible: model.info.post_view.post.thumbnail_url.is_some(),
                 },
                 gtk::Label {
                     #[watch]
@@ -88,15 +90,11 @@ impl SimpleComponent for PostPage {
                         set_text: "posted by"
                     },
 
-                    if model.info.post_view.creator.avatar.is_some() {
-                        gtk::Box {
-                            set_hexpand: false,
-                            set_margin_start: 10,
-                            #[local_ref]
-                            creator_avatar -> gtk::Box {}
-                        }
-                    } else {
-                        gtk::Box {}
+                    #[local_ref]
+                    creator_avatar -> gtk::Box {
+                        set_hexpand: false,
+                        set_margin_start: 10,
+                        set_visible: model.info.post_view.creator.avatar.is_some(),
                     },
 
                     gtk::Button {
@@ -109,14 +107,10 @@ impl SimpleComponent for PostPage {
                         set_text: " in "
                     },
 
-                    if model.info.community_view.community.icon.is_some() {
-                        gtk::Box {
-                            set_hexpand: false,
-                            #[local_ref]
-                            community_avatar -> gtk::Box {}
-                        }
-                    } else {
-                        gtk::Box {}
+                    #[local_ref]
+                    community_avatar -> gtk::Box {
+                        set_hexpand: false,
+                        set_visible: model.info.community_view.community.icon.is_some(),
                     },
 
                     gtk::Button {
@@ -139,24 +133,20 @@ impl SimpleComponent for PostPage {
                         connect_clicked => PostPageInput::OpenLink,
                     },
 
-                    if model.info.post_view.creator.id.0 == settings::get_current_account().id {
-                        gtk::Button {
-                            set_icon_name: "document-edit",
-                            connect_clicked => PostPageInput::OpenEditPostDialog,
-                            set_margin_start: 5,
-                        }
-                    } else {
-                        gtk::Box {}
+                    gtk::Button {
+                        set_icon_name: "document-edit",
+                        connect_clicked => PostPageInput::OpenEditPostDialog,
+                        set_margin_start: 5,
+                        #[watch]
+                        set_visible: model.info.post_view.creator.id.0 == settings::get_current_account().id,
                     },
 
-                    if model.info.post_view.creator.id.0 == settings::get_current_account().id {
-                        gtk::Button {
-                            set_icon_name: "edit-delete",
-                            connect_clicked => PostPageInput::DeletePost,
-                            set_margin_start: 5,
-                        }
-                    } else {
-                        gtk::Box {}
+                    gtk::Button {
+                        set_icon_name: "edit-delete",
+                        connect_clicked => PostPageInput::DeletePost,
+                        set_margin_start: 5,
+                        #[watch]
+                        set_visible: model.info.post_view.creator.id.0 == settings::get_current_account().id,
                     }
                 },
 
@@ -174,14 +164,12 @@ impl SimpleComponent for PostPage {
                         #[watch]
                         set_text: &format!("{} comments", model.info.post_view.counts.comments),
                     },
-                    if settings::get_current_account().jwt.is_some() {
-                        gtk::Button {
-                            set_label: "Comment",
-                            set_margin_start: 10,
-                            connect_clicked => PostPageInput::OpenCreateCommentDialog,
-                        }
-                    } else {
-                        gtk::Box {}
+                    gtk::Button {
+                        set_label: "Comment",
+                        set_margin_start: 10,
+                        connect_clicked => PostPageInput::OpenCreateCommentDialog,
+                        #[watch]
+                        set_visible: settings::get_current_account().jwt.is_some(),
                     }
                 },
 
@@ -208,7 +196,9 @@ impl SimpleComponent for PostPage {
             .transient_for(root)
             .launch(EditorType::Comment)
             .forward(sender.input_sender(), |msg| match msg {
-                EditorOutput::CreateRequest(comment, _) => PostPageInput::CreateCommentRequest(comment),
+                EditorOutput::CreateRequest(comment, _) => {
+                    PostPageInput::CreateCommentRequest(comment)
+                }
                 EditorOutput::EditRequest(post, _) => PostPageInput::EditPostRequest(post),
             });
         let voting_row = VotingRowModel::builder()
@@ -340,7 +330,7 @@ impl SimpleComponent for PostPage {
                         .body
                         .clone()
                         .unwrap_or(String::from("")),
-                    url: reqwest::Url::parse(&url).ok()
+                    url: reqwest::Url::parse(&url).ok(),
                 };
                 let sender = self.create_comment_dialog.sender();
                 sender.emit(DialogMsg::UpdateData(data));

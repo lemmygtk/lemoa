@@ -47,14 +47,10 @@ impl FactoryComponent for PostRow {
                 set_vexpand: false,
                 set_hexpand: true,
 
-                if self.post.community.icon.clone().is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        #[local_ref]
-                        community_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                community_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_visible: self.post.community.icon.clone().is_some(),
                 },
 
                 gtk::Button {
@@ -62,15 +58,11 @@ impl FactoryComponent for PostRow {
                     connect_clicked => PostRowMsg::OpenCommunity,
                 },
 
-                if self.post.creator.avatar.clone().is_some() {
-                    gtk::Box {
-                        set_hexpand: false,
-                        set_margin_start: 10,
-                        #[local_ref]
-                        author_image -> gtk::Box {}
-                    }
-                } else {
-                    gtk::Box {}
+                #[local_ref]
+                author_image -> gtk::Box {
+                    set_hexpand: false,
+                    set_margin_start: 10,
+                    set_visible: self.post.creator.avatar.clone().is_some(),
                 },
 
                 gtk::Button {
@@ -105,14 +97,12 @@ impl FactoryComponent for PostRow {
                     set_halign: gtk::Align::Start,
                     set_text: &format!("{} comments", self.post.counts.comments.clone()),
                 },
-                if self.post.creator.id.0 == settings::get_current_account().id {
-                    gtk::Button {
-                        set_icon_name: "edit-delete",
-                        connect_clicked => PostRowMsg::DeletePost,
-                        set_margin_start: 10,
-                    }
-                } else {
-                    gtk::Box {}
+                gtk::Button {
+                    set_icon_name: "edit-delete",
+                    connect_clicked => PostRowMsg::DeletePost,
+                    set_margin_start: 10,
+                    #[watch]
+                    set_visible: self.post.creator.id.0 == settings::get_current_account().id,
                 }
             },
 
