@@ -14,7 +14,6 @@ use crate::util;
 use crate::util::get_web_image_url;
 use crate::util::markdown_to_pango_markup;
 
-use super::post_page::PostPageInput;
 use super::voting_row::VotingRowModel;
 use super::voting_row::VotingStats;
 

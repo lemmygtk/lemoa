@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use lemmy_api_common::person::GetPersonDetailsResponse;
+use lemmy_api_common::{person::GetPersonDetailsResponse, lemmy_db_schema::newtypes::PersonId};
 use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
@@ -23,11 +23,13 @@ pub struct ProfilePage {
     comments: FactoryVecDeque<CommentRow>,
     communities: FactoryVecDeque<CommunityRow>,
     editor_dialog: Controller<EditorDialog>,
+    current_profile_page: i64,
 }
 
 #[derive(Debug)]
 pub enum ProfileInput {
-    UpdatePerson(GetPersonDetailsResponse),
+    FetchPerson(Option<PersonId>),
+    UpdatePerson(GetPersonDetailsResponse, bool),
     SendMessageRequest,
     SendMessage(String),
 }
@@ -116,6 +118,12 @@ impl SimpleComponent for ProfilePage {
                     } -> {
                         set_title: "Moderates",
                     },
+                },
+
+                gtk::Button {
+                    set_label: "More",
+                    set_margin_all: 10,
+                    connect_clicked => ProfileInput::FetchPerson(None),
                 }
             }
 
@@ -145,6 +153,7 @@ impl SimpleComponent for ProfilePage {
             comments,
             communities,
             editor_dialog,
+            current_profile_page: 1,
         };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
@@ -155,16 +164,20 @@ impl SimpleComponent for ProfilePage {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            ProfileInput::UpdatePerson(person) => {
-                self.info = person.clone();
-                self.avatar
-                    .emit(get_web_image_msg(person.person_view.person.avatar));
+            ProfileInput::UpdatePerson(person, clear) => {
+                sender.output_sender().emit(crate::AppMsg::UpdateState(crate::AppState::Person));
 
-                self.posts.guard().clear();
-                self.comments.guard().clear();
-                self.communities.guard().clear();
+                if clear {
+                    self.info = person.clone();
+                    self.avatar
+                        .emit(get_web_image_msg(person.person_view.person.avatar));
+
+                    self.posts.guard().clear();
+                    self.comments.guard().clear();
+                    self.communities.guard().clear();
+                }
 
                 for post in person.posts {
                     self.posts.guard().push_back(post);
@@ -178,6 +191,25 @@ impl SimpleComponent for ProfilePage {
                 let profile_id = self.info.person_view.person.id;
                 std::thread::spawn(move || {
                     let _ = api::private_message::create_private_message(content, profile_id);
+                });
+            }
+            ProfileInput::FetchPerson(person_id) => {
+                let page = if person_id.is_some() {
+                    1
+                } else {
+                    self.current_profile_page + 1
+                };
+                self.current_profile_page = page;
+                let person_id = person_id.unwrap_or(self.info.person_view.person.id);
+                std::thread::spawn(move || {
+                    match api::user::get_user(person_id, page) {
+                        Ok(person) => {
+                            sender.input(ProfileInput::UpdatePerson(person, page == 1));
+                        },
+                        Err(err) => {
+                            sender.output_sender().emit(crate::AppMsg::ShowMessage(err.to_string()));
+                        },
+                    };
                 });
             }
         }

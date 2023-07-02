@@ -13,7 +13,7 @@ use components::{
     instances_page::{InstancesPage, InstancesPageInput},
     post_page::{self, PostPage},
     post_row::PostRow,
-    profile_page::{self, ProfilePage},
+    profile_page::{ProfilePage, ProfileInput},
 };
 use dialogs::about::AboutDialog;
 use gtk::prelude::*;
@@ -24,7 +24,6 @@ use lemmy_api_common::{
         ListingType,
     },
     lemmy_db_views::structs::PostView,
-    person::GetPersonDetailsResponse,
     post::GetPostResponse,
 };
 use relm4::{
@@ -80,7 +79,6 @@ pub enum AppMsg {
     OpenCommunity(CommunityId),
     DoneFetchCommunity(GetCommunityResponse),
     OpenPerson(PersonId),
-    DoneFetchPerson(GetPersonDetailsResponse),
     OpenPost(PostId),
     DoneFetchPost(GetPostResponse),
     OpenInbox,
@@ -354,7 +352,7 @@ impl SimpleComponent for App {
         match msg {
             AppMsg::OpenCommunities
             | AppMsg::DoneFetchCommunity(_)
-            | AppMsg::DoneFetchPerson(_)
+            | AppMsg::OpenPerson(_)
             | AppMsg::DoneFetchPost(_)
             | AppMsg::DoneFetchPosts(_)
             | AppMsg::ShowMessage(_) => self.back_queue.push(msg.clone()),
@@ -408,19 +406,7 @@ impl SimpleComponent for App {
             }
             AppMsg::OpenPerson(person_id) => {
                 self.state = AppState::Loading;
-                std::thread::spawn(move || {
-                    let message = match api::user::get_user(person_id, 1) {
-                        Ok(person) => AppMsg::DoneFetchPerson(person),
-                        Err(err) => AppMsg::ShowMessage(err.to_string()),
-                    };
-                    sender.input(message);
-                });
-            }
-            AppMsg::DoneFetchPerson(person) => {
-                self.profile_page
-                    .sender()
-                    .emit(profile_page::ProfileInput::UpdatePerson(person));
-                self.state = AppState::Person;
+                self.profile_page.sender().emit(ProfileInput::FetchPerson(Some(person_id)));
             }
             AppMsg::OpenCommunity(community_id) => {
                 self.state = AppState::Loading;
