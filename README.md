@@ -1,4 +1,4 @@
-# lemoa
+`# lemoa
 
 Native Gtk client for Lemmy (beta)
 
@@ -30,6 +30,19 @@ If you don't use any of these platforms, consider [building the app from source]
 - Editing and deleting posts or comments
 - Viewing the personal inbox (mentions, replies)
 - Private messages
+
+# Troubleshooting
+
+### Flatpak installation doesn't follow the system Gtk theme
+
+In order to apply a different theme when using Flatpak, run
+```
+flatpak override --filesystem=/usr/share/themes/
+flatpak override --env GTK_THEME=Adwaita-dark
+```
+You can replace `Adwaita-dark` with the name of any other Gtk theme you have installed.
+
+If you don't use Flatpak, the correct Gtk Theme should be applied automatically.
 
 # Build dependencies
 
