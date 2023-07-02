@@ -1,25 +1,25 @@
 use gtk::prelude::*;
-use lemmy_api_common::lemmy_db_views_actor::structs::CommunityView;
+use lemmy_api_common::lemmy_db_views_actor::structs::CommunityModeratorView;
 use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
 use crate::util::get_web_image_url;
 
 #[derive(Debug)]
-pub struct CommunityRow {
-    community: CommunityView,
+pub struct ModeratesRow {
+    community: CommunityModeratorView,
     community_image: Controller<WebImage>,
 }
 
 #[derive(Debug)]
-pub enum CommunityRowMsg {
+pub enum ModeratesRowMsg {
     OpenCommunity,
 }
 
 #[relm4::factory(pub)]
-impl FactoryComponent for CommunityRow {
-    type Init = CommunityView;
-    type Input = CommunityRowMsg;
+impl FactoryComponent for ModeratesRow {
+    type Init = CommunityModeratorView;
+    type Input = ModeratesRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
     type ParentInput = crate::AppMsg;
@@ -35,7 +35,7 @@ impl FactoryComponent for CommunityRow {
 
             add_controller = gtk::GestureClick {
                 connect_pressed[sender] => move |_, _, _, _| {
-                    sender.input(CommunityRowMsg::OpenCommunity);
+                    sender.input(ModeratesRowMsg::OpenCommunity);
                 }
             },
 
@@ -47,7 +47,10 @@ impl FactoryComponent for CommunityRow {
                     gtk::Box {
                         set_hexpand: false,
                         #[local_ref]
-                        community_image -> gtk::Box {}
+                        community_image -> gtk::Box {
+                            set_height_request: 35,
+                            set_width_request: 35,
+                        }
                     }
                 } else {
                     gtk::Box {}
@@ -62,8 +65,14 @@ impl FactoryComponent for CommunityRow {
                 },
 
                 gtk::Label {
-                    set_label: &format!("{} subscribers, {} posts", self.community.counts.subscribers, self.community.counts.posts),
-                },
+                    set_label: "NSFW",
+                    set_visible: self.community.community.nsfw,
+                }
+            },
+
+            gtk::Label {
+                set_label: &self.community.community.description.clone().unwrap_or("".to_string()),
+                set_halign: gtk::Align::Start,
             },
 
             gtk::Separator {}
@@ -99,7 +108,7 @@ impl FactoryComponent for CommunityRow {
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
-            CommunityRowMsg::OpenCommunity => sender.output(crate::AppMsg::OpenCommunity(
+            ModeratesRowMsg::OpenCommunity => sender.output(crate::AppMsg::OpenCommunity(
                 self.community.community.id.clone(),
             )),
         }

@@ -40,7 +40,6 @@ impl FactoryComponent for CommentRow {
     type Input = CommentRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = PostViewWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 
@@ -176,7 +175,9 @@ impl FactoryComponent for CommentRow {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    sender.output_sender().emit(crate::AppMsg::StartFetchPosts(None, true));
+                    sender
+                        .output_sender()
+                        .emit(crate::AppMsg::StartFetchPosts(None, true));
                 });
             }
             CommentRowMsg::OpenEditor(is_new) => {
@@ -216,8 +217,7 @@ impl FactoryComponent for CommentRow {
                 let post_id = self.comment.comment.post_id;
                 let parent_id = self.comment.comment.id;
                 std::thread::spawn(move || {
-                    match api::comment::create_comment(post_id, data.body, Some(parent_id))
-                    {
+                    match api::comment::create_comment(post_id, data.body, Some(parent_id)) {
                         Ok(_comment) => {
                             // TODO sender.output_sender().emit(PostPageInput::CreatedComment(comment.comment_view));
                         }

@@ -20,7 +20,6 @@ impl FactoryComponent for InstanceRow {
     type Input = InstanceRowMsg;
     type Output = InstancesPageInput;
     type CommandOutput = ();
-    type Widgets = PostViewWidgets;
     type ParentInput = InstancesPageInput;
     type ParentWidget = gtk::Box;
 

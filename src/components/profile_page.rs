@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use lemmy_api_common::{person::GetPersonDetailsResponse, lemmy_db_schema::newtypes::PersonId};
+use lemmy_api_common::{lemmy_db_schema::newtypes::PersonId, person::GetPersonDetailsResponse};
 use relm4::{factory::FactoryVecDeque, prelude::*};
 use relm4_components::web_image::WebImage;
 
@@ -12,16 +12,16 @@ use crate::settings;
 use crate::util::get_web_image_msg;
 use crate::util::markdown_to_pango_markup;
 
-use super::post_row::PostRow;
-use super::community_row::CommunityRow;
 use super::comment_row::CommentRow;
+use super::moderates_row::ModeratesRow;
+use super::post_row::PostRow;
 
 pub struct ProfilePage {
     info: GetPersonDetailsResponse,
     avatar: Controller<WebImage>,
     posts: FactoryVecDeque<PostRow>,
     comments: FactoryVecDeque<CommentRow>,
-    communities: FactoryVecDeque<CommunityRow>,
+    moderates: FactoryVecDeque<ModeratesRow>,
     editor_dialog: Controller<EditorDialog>,
     current_profile_page: i64,
 }
@@ -112,7 +112,7 @@ impl SimpleComponent for ProfilePage {
                     },
                     add_child = &gtk::Box {
                         #[local_ref]
-                        communities -> gtk::Box {
+                        moderates -> gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
                         }
                     } -> {
@@ -137,7 +137,7 @@ impl SimpleComponent for ProfilePage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let communities = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let moderates = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let comments = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let editor_dialog = EditorDialog::builder()
             .transient_for(root)
@@ -151,14 +151,14 @@ impl SimpleComponent for ProfilePage {
             avatar,
             posts,
             comments,
-            communities,
+            moderates,
             editor_dialog,
             current_profile_page: 1,
         };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
         let comments = model.comments.widget();
-        let communities = model.communities.widget();
+        let moderates = model.moderates.widget();
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
@@ -167,7 +167,9 @@ impl SimpleComponent for ProfilePage {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             ProfileInput::UpdatePerson(person, clear) => {
-                sender.output_sender().emit(crate::AppMsg::UpdateState(crate::AppState::Person));
+                sender
+                    .output_sender()
+                    .emit(crate::AppMsg::UpdateState(crate::AppState::Person));
 
                 if clear {
                     self.info = person.clone();
@@ -176,7 +178,7 @@ impl SimpleComponent for ProfilePage {
 
                     self.posts.guard().clear();
                     self.comments.guard().clear();
-                    self.communities.guard().clear();
+                    self.moderates.guard().clear();
                 }
 
                 for post in person.posts {
@@ -184,6 +186,9 @@ impl SimpleComponent for ProfilePage {
                 }
                 for comment in person.comments {
                     self.comments.guard().push_back(comment);
+                }
+                for community in person.moderates {
+                    self.moderates.guard().push_back(community);
                 }
             }
             ProfileInput::SendMessageRequest => self.editor_dialog.sender().emit(DialogMsg::Show),
@@ -205,10 +210,12 @@ impl SimpleComponent for ProfilePage {
                     match api::user::get_user(person_id, page) {
                         Ok(person) => {
                             sender.input(ProfileInput::UpdatePerson(person, page == 1));
-                        },
+                        }
                         Err(err) => {
-                            sender.output_sender().emit(crate::AppMsg::ShowMessage(err.to_string()));
-                        },
+                            sender
+                                .output_sender()
+                                .emit(crate::AppMsg::ShowMessage(err.to_string()));
+                        }
                     };
                 });
             }

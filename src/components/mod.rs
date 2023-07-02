@@ -7,6 +7,7 @@ pub mod instance_row;
 pub mod instances_page;
 pub mod login_page;
 pub mod mention_row;
+pub mod moderates_row;
 pub mod post_page;
 pub mod post_row;
 pub mod private_message_row;

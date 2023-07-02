@@ -31,7 +31,6 @@ impl FactoryComponent for MentionRow {
     type Input = MentionRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = MentionRowWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 

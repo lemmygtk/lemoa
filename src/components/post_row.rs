@@ -30,7 +30,6 @@ impl FactoryComponent for PostRow {
     type Input = PostRowMsg;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = PostViewWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 

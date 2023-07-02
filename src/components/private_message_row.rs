@@ -22,7 +22,6 @@ impl FactoryComponent for PrivateMessageRow {
     type Input = PrivateMessageRowInput;
     type Output = crate::AppMsg;
     type CommandOutput = ();
-    type Widgets = PrivateMessageRowWidgets;
     type ParentInput = crate::AppMsg;
     type ParentWidget = gtk::Box;
 
