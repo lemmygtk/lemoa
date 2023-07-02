@@ -79,6 +79,7 @@ cargo run
 # Credits
 - [Original Icon](https://game-icons.net/1x1/delapouite/rat.html) by [Delapouite](https://delapouite.com/) under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)
 - Modified icon with gradient by [Ategon](https://programming.dev/u/Ategon)
+- [Relm4](https://github.com/Relm4/Relm4) for providing such an awesome Gtk crate for Rust
 
 # License
 
