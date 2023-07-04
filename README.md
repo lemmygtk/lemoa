@@ -7,6 +7,7 @@ Native Gtk client for Lemmy (beta)
 | Platform | Command                                                                                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Flathub  | <a href="https://flathub.org/apps/details/io.github.lemmygtk.lemoa"><img src="https://flathub.org/assets/badges/flathub-badge-en.png" width="150"/></a> |
+| AUR      | https://aur.archlinux.org/packages/lemoa-git
 
 If you don't use any of these platforms, consider [building the app from source](#Building).
 
