@@ -1,4 +1,4 @@
-`# lemoa
+# Lemoa
 
 Native Gtk client for Lemmy (beta)
 
