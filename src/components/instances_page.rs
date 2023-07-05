@@ -8,6 +8,7 @@ use super::instance_row::InstanceRow;
 
 pub struct InstancesPage {
     instances: FactoryVecDeque<InstanceRow>,
+    instances_search_buffer: gtk::EntryBuffer
 }
 
 #[derive(Debug)]
@@ -40,13 +41,39 @@ impl SimpleComponent for InstancesPage {
             #[name(stack)]
             gtk::Stack {
                 add_child = &gtk::ScrolledWindow {
-                    #[local_ref]
-                    instances -> gtk::Box {
+                    set_vexpand: true,
+                    set_hexpand: true,
+                    gtk::Box {
+
                         set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: 5,
-                        set_vexpand: true,
-                    },
-                } -> {
+                        set_spacing: 10,
+                        set_margin_all: 10,
+
+                        gtk::Box {
+                            set_spacing: 10,
+                            gtk::Entry {
+                                set_hexpand: true,
+                                set_tooltip_text: Some("Search"),
+                                set_buffer: &model.instances_search_buffer,
+                            },
+                            gtk::Button {
+                                set_label: "Filter",
+                                connect_clicked => InstancesPageInput::FetchInstances,
+                            }
+                        },
+
+                        #[local_ref]
+                        instances -> gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                            set_spacing: 5,
+                            set_vexpand: true,
+                        },
+
+                    }
+
+                    }
+
+                    -> {
                     set_title: "Public",
                 },
                 add_child = &gtk::Box {
@@ -71,6 +98,7 @@ impl SimpleComponent for InstancesPage {
                 } -> {
                     set_title: "Custom",
                 },
+
             }
         }
     }
@@ -81,7 +109,8 @@ impl SimpleComponent for InstancesPage {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
-        let model = Self { instances };
+        let instances_search_buffer = gtk::EntryBuffer::builder().build();
+        let model = Self { instances, instances_search_buffer };
         let instances = model.instances.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -90,8 +119,9 @@ impl SimpleComponent for InstancesPage {
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             InstancesPageInput::FetchInstances => {
+                let filter =  self.instances_search_buffer.text().as_str().to_owned().clone();
                 std::thread::spawn(move || {
-                    let message = match api::instances::fetch_instances() {
+                    let message = match api::instances::fetch_instances(&filter) {
                         Ok(instances) => Some(InstancesPageInput::DoneFetchInstances(instances)),
                         Err(_err) => None,
                     };
