@@ -36,6 +36,7 @@ pub enum PostPageInput {
     OpenPerson,
     OpenCommunity,
     OpenLink,
+    OpenImage,
     OpenCreateCommentDialog,
     CreateCommentRequest(EditorData),
     EditPostRequest(EditorData),
@@ -66,12 +67,22 @@ impl SimpleComponent for PostPage {
                     set_margin_top: 20,
                     #[watch]
                     set_visible: model.info.post_view.post.thumbnail_url.is_some(),
+                    add_controller = gtk::GestureClick {
+                        connect_pressed[sender] => move |_, _, _, _| {
+                            sender.input(PostPageInput::OpenImage);
+                        }
+                    },
                 },
                 gtk::Label {
                     #[watch]
                     set_text: &model.info.post_view.post.name,
                     set_wrap: true,
                     add_css_class: "font-very-bold",
+                    add_controller = gtk::GestureClick {
+                        connect_pressed[sender] => move |_, _, _, _| {
+                            sender.input(PostPageInput::OpenLink);
+                        }
+                    },
                 },
                 gtk::Label {
                     #[watch]
@@ -121,20 +132,6 @@ impl SimpleComponent for PostPage {
                         connect_clicked => PostPageInput::OpenCommunity,
                     },
 
-                    gtk::Label {
-                        set_margin_start: 10,
-                        set_label: &util::format_elapsed_time(model.info.post_view.post.published),
-                    },
-
-                    gtk::Box {
-                        set_hexpand: true,
-                    },
-
-                    gtk::Button {
-                        set_label: "View",
-                        connect_clicked => PostPageInput::OpenLink,
-                    },
-
                     gtk::Button {
                         set_icon_name: "document-edit",
                         connect_clicked => PostPageInput::OpenEditPostDialog,
@@ -146,7 +143,6 @@ impl SimpleComponent for PostPage {
                     gtk::Button {
                         set_icon_name: "edit-delete",
                         connect_clicked => PostPageInput::DeletePost,
-                        set_margin_start: 5,
                         #[watch]
                         set_visible: model.info.post_view.creator.id.0 == settings::get_current_account().id,
                     }
@@ -154,10 +150,14 @@ impl SimpleComponent for PostPage {
 
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
-                    set_margin_top: 10,
+                    set_margin_top: 15,
                     set_margin_bottom: 10,
                     set_halign: gtk::Align::Center,
 
+                    gtk::Label {
+                        set_margin_end: 15,
+                        set_label: &util::format_elapsed_time(model.info.post_view.post.published),
+                    },
                     #[local_ref]
                     voting_row -> gtk::Box {
                         set_margin_end: 10,
@@ -165,6 +165,7 @@ impl SimpleComponent for PostPage {
                     gtk::Label {
                         #[watch]
                         set_text: &format!("{} comments", model.info.post_view.counts.comments),
+                        set_margin_start: 10,
                     },
                     gtk::Button {
                         set_label: "Comment",
@@ -276,15 +277,17 @@ impl SimpleComponent for PostPage {
                 let post = self.info.post_view.post.clone();
                 let mut link = get_web_image_url(post.url);
                 if link.is_empty() {
-                    link = get_web_image_url(post.thumbnail_url);
-                }
-                if link.is_empty() {
                     link = get_web_image_url(post.embed_video_url);
                 }
-                if link.is_empty() {
-                    return;
+                if !link.is_empty() {
+                    gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
                 }
-                gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
+            }
+            PostPageInput::OpenImage => {
+                let link = get_web_image_url(self.info.post_view.post.thumbnail_url.clone());
+                if !link.is_empty() {
+                    gtk::show_uri(None::<&relm4::gtk::Window>, &link, 0);
+                }
             }
             PostPageInput::OpenCreateCommentDialog => {
                 let sender = self.create_comment_dialog.sender();
