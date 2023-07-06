@@ -79,6 +79,7 @@ impl FactoryComponent for PostRow {
             gtk::Label {
                 set_halign: gtk::Align::Start,
                 set_text: &self.post.post.name,
+                set_wrap: true,
                 add_css_class: "font-bold",
                 add_controller = gtk::GestureClick {
                     connect_pressed[sender] => move |_, _, _, _| {

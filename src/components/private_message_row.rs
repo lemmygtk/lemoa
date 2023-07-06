@@ -60,6 +60,7 @@ impl FactoryComponent for PrivateMessageRow {
             gtk::Label {
                 #[watch]
                set_markup: &markdown_to_pango_markup(self.message.private_message.content.clone()),
+               set_wrap: true,
                set_halign: gtk::Align::Start,
                set_use_markup: true,
             },

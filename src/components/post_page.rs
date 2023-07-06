@@ -70,11 +70,13 @@ impl SimpleComponent for PostPage {
                 gtk::Label {
                     #[watch]
                     set_text: &model.info.post_view.post.name,
+                    set_wrap: true,
                     add_css_class: "font-very-bold",
                 },
                 gtk::Label {
                     #[watch]
                     set_markup: &markdown_to_pango_markup(model.info.post_view.post.body.clone().unwrap_or("".to_string())),
+                    set_wrap: true,
                     set_margin_top: 10,
                     set_use_markup: true,
                 },

@@ -77,6 +77,7 @@ impl FactoryComponent for CommentRow {
                 #[watch]
                set_markup: &markdown_to_pango_markup(self.comment.comment.content.clone()),
                set_halign: gtk::Align::Start,
+               set_wrap: true,
                set_use_markup: true,
             },
 

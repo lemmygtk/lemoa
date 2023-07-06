@@ -13,7 +13,7 @@ use components::{
     instances_page::{InstancesPage, InstancesPageInput},
     post_page::{self, PostPage},
     post_row::PostRow,
-    profile_page::{ProfilePage, ProfileInput},
+    profile_page::{ProfileInput, ProfilePage},
 };
 use dialogs::about::AboutDialog;
 use gtk::prelude::*;
@@ -206,6 +206,7 @@ impl SimpleComponent for App {
                         gtk::Label {
                             #[watch]
                             set_text: &model.message.clone().unwrap_or("".to_string()),
+                            set_wrap: true,
                         },
                         gtk::Button {
                             set_label: "Go back",
@@ -406,7 +407,9 @@ impl SimpleComponent for App {
             }
             AppMsg::OpenPerson(person_id) => {
                 self.state = AppState::Loading;
-                self.profile_page.sender().emit(ProfileInput::FetchPerson(Some(person_id)));
+                self.profile_page
+                    .sender()
+                    .emit(ProfileInput::FetchPerson(Some(person_id)));
             }
             AppMsg::OpenCommunity(community_id) => {
                 self.state = AppState::Loading;

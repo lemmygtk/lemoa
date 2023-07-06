@@ -66,6 +66,7 @@ impl SimpleComponent for CommunityPage {
                     #[watch]
                     set_markup: &markdown_to_pango_markup(model.info.community.description.clone().unwrap_or("".to_string())),
                     set_use_markup: true,
+                    set_wrap: true,
                 },
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,

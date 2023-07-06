@@ -3,7 +3,7 @@ use lemmy_api_common::lemmy_db_views_actor::structs::CommunityModeratorView;
 use relm4::prelude::*;
 use relm4_components::web_image::WebImage;
 
-use crate::util::get_web_image_url;
+use crate::util::{get_web_image_url, markdown_to_pango_markup};
 
 #[derive(Debug)]
 pub struct ModeratesRow {
@@ -65,11 +65,15 @@ impl FactoryComponent for ModeratesRow {
             },
 
             gtk::Label {
-                set_label: &self.community.community.description.clone().unwrap_or("".to_string()),
+                set_label: &markdown_to_pango_markup(self.community.community.description.clone().unwrap_or("".to_string())),
+                set_use_markup: true,
+                set_wrap: true,
                 set_halign: gtk::Align::Start,
             },
 
-            gtk::Separator {}
+            gtk::Separator {
+                set_margin_bottom: 10,
+            }
         }
     }
 

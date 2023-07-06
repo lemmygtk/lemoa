@@ -63,6 +63,7 @@ impl SimpleComponent for ProfilePage {
                 gtk::Label {
                     #[watch]
                     set_markup: &markdown_to_pango_markup(model.info.person_view.person.bio.clone().unwrap_or("".to_string())),
+                    set_wrap: true,
                     set_use_markup: true,
                 },
 
