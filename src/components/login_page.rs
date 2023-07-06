@@ -50,7 +50,7 @@ impl SimpleComponent for LoginPage {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_halign: gtk::Align::End,
                 gtk::Button {
-                    set_label: "Cancel",
+                    set_label: "Cancel/Skip",
                     connect_clicked => LoginPageInput::Cancel,
                     set_margin_end: 10,
                 },
