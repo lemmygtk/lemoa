@@ -30,11 +30,11 @@ impl SimpleComponent for PostsPage {
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
-                set_margin_all: 10,
 
                 gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_spacing: 10,
+                    set_margin_all: 10,
 
                     gtk::ToggleButton {
                         set_label: "All",
@@ -63,8 +63,7 @@ impl SimpleComponent for PostsPage {
                 gtk::Button {
                     set_label: "More",
                     connect_clicked => PostsPageInput::FetchPosts(model.posts_type, false),
-                    set_margin_top: 10,
-                    set_margin_bottom: 10,
+                    set_margin_all: 10,
                 }
             }
         }
