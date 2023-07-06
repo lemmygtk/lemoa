@@ -44,7 +44,6 @@ impl SimpleComponent for InstancesPage {
                     set_vexpand: true,
                     set_hexpand: true,
                     gtk::Box {
-
                         set_orientation: gtk::Orientation::Vertical,
                         set_spacing: 10,
                         set_margin_all: 10,
@@ -59,21 +58,16 @@ impl SimpleComponent for InstancesPage {
                             gtk::Button {
                                 set_label: "Filter",
                                 connect_clicked => InstancesPageInput::FetchInstances,
-                            }
-                        },
-
+                                }
+                            },
                         #[local_ref]
                         instances -> gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
                             set_spacing: 5,
                             set_vexpand: true,
-                        },
-
-                    }
-
-                    }
-
-                    -> {
+                            },
+                        }
+                } -> {
                     set_title: "Public",
                 },
                 add_child = &gtk::Box {
@@ -119,7 +113,7 @@ impl SimpleComponent for InstancesPage {
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             InstancesPageInput::FetchInstances => {
-                let filter =  self.instances_search_buffer.text().as_str().to_owned().clone();
+                let filter =  self.instances_search_buffer.text().as_str().to_owned();
                 std::thread::spawn(move || {
                     let message = match api::instances::fetch_instances(&filter) {
                         Ok(instances) => Some(InstancesPageInput::DoneFetchInstances(instances)),

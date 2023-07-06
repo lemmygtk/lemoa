@@ -22,7 +22,7 @@ pub fn fetch_instances(query_filter: &str) -> std::result::Result<Vec<Instance>,
             .linked
             .iter()
             .filter(|instance| instance.software == Some("lemmy".to_owned()))
-            .filter(|instance| instance.domain.clone().contains(query_filter))
+            .filter(|instance| instance.domain.clone().contains(&query_filter.to_lowercase()))
             .map(|instance| instance.clone())
             .collect::<Vec<Instance>>()),
         None => Ok(vec![]),
