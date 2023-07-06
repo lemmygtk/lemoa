@@ -12,7 +12,7 @@ use components::{
     inbox_page::{InboxInput, InboxPage},
     instances_page::{InstancesPage, InstancesPageInput},
     post_page::{self, PostPage},
-    post_row::PostRow,
+    posts_page::{PostsPage, PostsPageInput},
     profile_page::{ProfileInput, ProfilePage},
 };
 use dialogs::about::AboutDialog;
@@ -23,12 +23,10 @@ use lemmy_api_common::{
         newtypes::{CommunityId, PersonId, PostId},
         ListingType,
     },
-    lemmy_db_views::structs::PostView,
     post::GetPostResponse,
 };
 use relm4::{
     actions::{RelmAction, RelmActionGroup},
-    factory::FactoryVecDeque,
     prelude::*,
     set_global_css,
 };
@@ -53,8 +51,8 @@ struct App {
     state: AppState,
     message: Option<String>,
     back_queue: Vec<AppMsg>,
-    posts: FactoryVecDeque<PostRow>,
     instances_page: Controller<InstancesPage>,
+    posts_page: Controller<PostsPage>,
     profile_page: Controller<ProfilePage>,
     community_page: Controller<CommunityPage>,
     communities_page: Controller<CommunitiesPage>,
@@ -62,8 +60,6 @@ struct App {
     inbox_page: Controller<InboxPage>,
     login_page: Controller<LoginPage>,
     logged_in: bool,
-    current_posts_type: Option<ListingType>,
-    current_posts_page: i64,
     about_dialog: Controller<AboutDialog>,
 }
 
@@ -74,8 +70,7 @@ pub enum AppMsg {
     LoggedIn,
     Logout,
     ShowMessage(String),
-    StartFetchPosts(Option<ListingType>, bool),
-    DoneFetchPosts(Vec<PostView>),
+    OpenPosts,
     OpenCommunity(CommunityId),
     DoneFetchCommunity(GetCommunityResponse),
     OpenPerson(PersonId),
@@ -112,18 +107,12 @@ impl SimpleComponent for App {
                     set_visible: model.back_queue.len() > 1,
                 },
                 pack_start = &gtk::Button {
-                    set_label: "Home",
-                    connect_clicked => AppMsg::StartFetchPosts(None, true),
+                    set_label: "Posts",
+                    connect_clicked => AppMsg::OpenPosts,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Communities",
                     connect_clicked => AppMsg::OpenCommunities,
-                },
-                pack_start = &gtk::Button {
-                    set_label: "Recommended",
-                    connect_clicked => AppMsg::StartFetchPosts(Some(ListingType::Subscribed), true),
-                    #[watch]
-                    set_visible: model.logged_in,
                 },
                 pack_start = &gtk::Button {
                     set_label: "Inbox",
@@ -134,24 +123,9 @@ impl SimpleComponent for App {
             },
 
             match model.state {
-                AppState::Posts => gtk::ScrolledWindow {
-                    set_hexpand: true,
-
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Vertical,
-
-                        #[local_ref]
-                        posts_box -> gtk::Box {
-                            set_orientation: gtk::Orientation::Vertical,
-                            set_spacing: 5,
-                        },
-
-                        gtk::Button {
-                            set_label: "More",
-                            connect_clicked => AppMsg::StartFetchPosts(model.current_posts_type, false),
-                            set_margin_all: 10,
-                        }
-                    }
+                AppState::Posts => gtk::Box {
+                    #[local_ref]
+                    posts_page -> gtk::ScrolledWindow {}
                 },
                 AppState::Loading => gtk::Box {
                     set_hexpand: true,
@@ -248,8 +222,10 @@ impl SimpleComponent for App {
         };
         let logged_in = current_account.jwt.is_some();
 
-        // initialize all controllers and factories
-        let posts = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
+        // initialize all controllers for the various components
+        let posts_page = PostsPage::builder()
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
         let instances_page = InstancesPage::builder()
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
@@ -279,7 +255,7 @@ impl SimpleComponent for App {
             state,
             back_queue: vec![],
             logged_in,
-            posts,
+            posts_page,
             instances_page,
             profile_page,
             community_page,
@@ -288,18 +264,16 @@ impl SimpleComponent for App {
             communities_page,
             login_page,
             message: None,
-            current_posts_type: None,
-            current_posts_page: 1,
             about_dialog,
         };
 
         // fetch posts if that's the initial page
         if !current_account.instance_url.is_empty() {
-            sender.input(AppMsg::StartFetchPosts(None, true))
+            sender.input(AppMsg::OpenPosts)
         };
 
         // setup all widgets and different stack pages
-        let posts_box = model.posts.widget();
+        let posts_page = model.posts_page.widget();
         let instances_page = model.instances_page.widget();
         let profile_page = model.profile_page.widget();
         let community_page = model.community_page.widget();
@@ -355,7 +329,7 @@ impl SimpleComponent for App {
             | AppMsg::DoneFetchCommunity(_)
             | AppMsg::OpenPerson(_)
             | AppMsg::DoneFetchPost(_)
-            | AppMsg::DoneFetchPosts(_)
+            | AppMsg::OpenPosts
             | AppMsg::ShowMessage(_) => self.back_queue.push(msg.clone()),
             _ => {}
         }
@@ -366,35 +340,6 @@ impl SimpleComponent for App {
                 self.instances_page
                     .sender()
                     .emit(InstancesPageInput::FetchInstances);
-            }
-            AppMsg::StartFetchPosts(type_, remove_previous) => {
-                self.current_posts_type = type_;
-                let page = if remove_previous {
-                    1
-                } else {
-                    self.current_posts_page + 1
-                };
-                // show the loading indicator if it's the first page
-                if page == 1 {
-                    self.state = AppState::Loading;
-                }
-                self.current_posts_page = page;
-                std::thread::spawn(move || {
-                    let message = match api::posts::list_posts(page, None, type_) {
-                        Ok(posts) => AppMsg::DoneFetchPosts(posts),
-                        Err(err) => AppMsg::ShowMessage(err.to_string()),
-                    };
-                    sender.input(message);
-                });
-            }
-            AppMsg::DoneFetchPosts(posts) => {
-                self.state = AppState::Posts;
-                if self.current_posts_page == 1 {
-                    self.posts.guard().clear();
-                }
-                for post in posts {
-                    self.posts.guard().push_back(post);
-                }
             }
             AppMsg::OpenCommunities => {
                 self.state = AppState::Communities;
@@ -465,7 +410,7 @@ impl SimpleComponent for App {
             AppMsg::LoggedIn => {
                 self.logged_in = true;
                 self.back_queue.clear();
-                sender.input(AppMsg::StartFetchPosts(None, true));
+                sender.input(AppMsg::OpenPosts);
             }
             AppMsg::PopBackStack => {
                 let action = self.back_queue.get(self.back_queue.len() - 2);
@@ -479,6 +424,10 @@ impl SimpleComponent for App {
             AppMsg::UpdateState(state) => {
                 self.state = state;
             }
+            AppMsg::OpenPosts => self
+                .posts_page
+                .sender()
+                .emit(PostsPageInput::FetchPosts(ListingType::Subscribed, true)),
         }
     }
 }

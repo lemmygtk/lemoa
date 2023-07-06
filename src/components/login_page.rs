@@ -119,9 +119,7 @@ impl SimpleComponent for LoginPage {
                 });
             }
             LoginPageInput::Cancel => {
-                sender
-                    .output_sender()
-                    .emit(crate::AppMsg::StartFetchPosts(None, true));
+                sender.output_sender().emit(crate::AppMsg::OpenPosts);
             }
         }
     }

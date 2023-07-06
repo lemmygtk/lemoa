@@ -316,9 +316,7 @@ impl SimpleComponent for PostPage {
                 let post_id = self.info.post_view.post.id;
                 std::thread::spawn(move || {
                     let _ = api::post::delete_post(post_id);
-                    sender
-                        .output_sender()
-                        .emit(crate::AppMsg::StartFetchPosts(None, true));
+                    sender.output_sender().emit(crate::AppMsg::OpenPosts);
                 });
             }
             PostPageInput::OpenEditPostDialog => {

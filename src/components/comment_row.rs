@@ -164,9 +164,7 @@ impl FactoryComponent for CommentRow {
                 let comment_id = self.comment.comment.id;
                 std::thread::spawn(move || {
                     let _ = api::comment::delete_comment(comment_id);
-                    sender
-                        .output_sender()
-                        .emit(crate::AppMsg::StartFetchPosts(None, true));
+                    sender.output_sender().emit(crate::AppMsg::OpenPosts);
                 });
             }
             CommentRowMsg::OpenEditor(is_new) => {
