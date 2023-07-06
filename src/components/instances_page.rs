@@ -128,7 +128,7 @@ impl SimpleComponent for InstancesPage {
                         current_account.instance_url = url[0..url.len() - 1].to_string();
                         current_account.jwt = None;
                         settings::update_current_account(current_account);
-                        crate::AppMsg::ShowLogin
+                        crate::AppMsg::UpdateState(crate::AppState::Login)
                     }
                     Err(err) => crate::AppMsg::ShowMessage(err.to_string()),
                 };

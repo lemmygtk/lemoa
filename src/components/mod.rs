@@ -1,3 +1,5 @@
+pub mod account_row;
+pub mod accounts_page;
 pub mod comment_row;
 pub mod communities_page;
 pub mod community_page;

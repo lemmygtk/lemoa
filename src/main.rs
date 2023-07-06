@@ -7,6 +7,7 @@ pub mod util;
 
 use api::{community::default_community, post::default_post, user::default_person};
 use components::{
+    accounts_page::AccountsPage,
     communities_page::{CommunitiesPage, CommunitiesPageInput},
     community_page::{self, CommunityPage},
     inbox_page::{InboxInput, InboxPage},
@@ -45,6 +46,7 @@ pub enum AppState {
     Login,
     Message,
     Inbox,
+    AccountsPage,
 }
 
 struct App {
@@ -59,6 +61,7 @@ struct App {
     post_page: Controller<PostPage>,
     inbox_page: Controller<InboxPage>,
     login_page: Controller<LoginPage>,
+    accounts_page: Controller<AccountsPage>,
     logged_in: bool,
     about_dialog: Controller<AboutDialog>,
 }
@@ -66,7 +69,6 @@ struct App {
 #[derive(Debug, Clone)]
 pub enum AppMsg {
     ChooseInstance,
-    ShowLogin,
     LoggedIn,
     Logout,
     ShowMessage(String),
@@ -194,16 +196,22 @@ impl SimpleComponent for App {
                         inbox_page -> gtk::Box {}
                     }
                 }
+                AppState::AccountsPage => {
+                    gtk::Box {
+                        #[local_ref]
+                        accounts_page -> gtk::Box {}
+                    }
+                }
             }
         }
     }
 
     menu! {
         menu_model: {
-            "Choose Instance" => ChangeInstanceAction,
-            "Profile" => ProfileAction,
+            "Change Instance" => ChangeInstanceAction,
+            "Accounts" => AccountsAction,
             "Login" => LoginAction,
-            "Logout" => LogoutAction,
+            "Profile" => ProfileAction,
             "About" => AboutAction
         }
     }
@@ -250,6 +258,9 @@ impl SimpleComponent for App {
         let login_page = LoginPage::builder()
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
+        let accounts_page = AccountsPage::builder()
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
 
         let model = App {
             state,
@@ -263,6 +274,7 @@ impl SimpleComponent for App {
             inbox_page,
             communities_page,
             login_page,
+            accounts_page,
             message: None,
             about_dialog,
         };
@@ -281,6 +293,7 @@ impl SimpleComponent for App {
         let inbox_page = model.inbox_page.widget();
         let communities_page = model.communities_page.widget();
         let login_page = model.login_page.widget();
+        let accounts_page = model.accounts_page.widget();
 
         let widgets = view_output!();
 
@@ -290,6 +303,10 @@ impl SimpleComponent for App {
             RelmAction::new_stateless(move |_| {
                 instance_sender.input(AppMsg::ChooseInstance);
             });
+        let accounts_sender = sender.clone();
+        let accounts_action: RelmAction<AccountsAction> = RelmAction::new_stateless(move |_| {
+            accounts_sender.input(AppMsg::UpdateState(AppState::AccountsPage));
+        });
         let profile_sender = sender.clone();
         let profile_action: RelmAction<ProfileAction> = RelmAction::new_stateless(move |_| {
             let person = settings::get_current_account();
@@ -299,10 +316,7 @@ impl SimpleComponent for App {
         });
         let login_sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
-            login_sender.input(AppMsg::ShowLogin);
-        });
-        let logout_action: RelmAction<LogoutAction> = RelmAction::new_stateless(move |_| {
-            sender.input(AppMsg::Logout);
+            login_sender.input(AppMsg::UpdateState(AppState::Login));
         });
         let about_action = {
             let sender = model.about_dialog.sender().clone();
@@ -313,9 +327,9 @@ impl SimpleComponent for App {
 
         let mut group = RelmActionGroup::<WindowActionGroup>::new();
         group.add_action(instance_action);
+        group.add_action(accounts_action);
         group.add_action(profile_action);
         group.add_action(login_action);
-        group.add_action(logout_action);
         group.add_action(about_action);
         group.register_for_widget(&widgets.main_window);
 
@@ -390,12 +404,11 @@ impl SimpleComponent for App {
                     .emit(post_page::PostPageInput::UpdatePost(post));
                 self.state = AppState::Post;
             }
-            AppMsg::ShowLogin => {
-                self.state = AppState::Login;
-            }
             AppMsg::Logout => {
                 let mut account = settings::get_current_account();
                 account.jwt = None;
+                account.name = "".to_string();
+                account.id = 0;
                 settings::update_current_account(account);
                 self.logged_in = false;
             }
@@ -434,9 +447,9 @@ impl SimpleComponent for App {
 
 relm4::new_action_group!(WindowActionGroup, "win");
 relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance");
-relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
+relm4::new_stateless_action!(AccountsAction, WindowActionGroup, "accounts");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
-relm4::new_stateless_action!(LogoutAction, WindowActionGroup, "logout");
+relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
 fn main() {

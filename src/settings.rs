@@ -45,14 +45,40 @@ pub fn get_prefs() -> Preferences {
 pub fn get_current_account() -> Account {
     let mut prefs = get_prefs();
     if prefs.accounts.len() == 0 {
-        prefs.accounts.push(Account::default());
-        save_prefs(&prefs);
+        prefs = create_account(true);
     }
     prefs.accounts[prefs.current_account_index as usize].clone()
 }
 
 pub fn update_current_account(account: Account) {
+    let settings = get_prefs();
+    update_account(account, settings.current_account_index as usize)
+}
+
+pub fn update_account(account: Account, index: usize) {
     let mut settings = get_prefs();
-    settings.accounts[settings.current_account_index as usize] = account;
+    settings.accounts[index] = account;
     save_prefs(&settings);
+}
+
+pub fn remove_account(index: usize) {
+    let mut settings = get_prefs();
+    settings.accounts.remove(index);
+    save_prefs(&settings);
+}
+
+pub fn create_account(reset_index: bool) -> Preferences {
+    let mut prefs = get_prefs();
+    prefs.accounts.push(Account::default());
+    if reset_index {
+        prefs.current_account_index = 0;
+    }
+    save_prefs(&prefs);
+    prefs
+}
+
+pub fn update_account_index(index: usize) {
+    let mut prefs = get_prefs();
+    prefs.current_account_index = index as u32;
+    save_prefs(&prefs);
 }
