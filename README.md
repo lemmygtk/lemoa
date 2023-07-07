@@ -7,11 +7,12 @@ Native Gtk client for Lemmy (beta)
 | Platform | Command                                                                                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Flathub  | <a href="https://flathub.org/apps/details/io.github.lemmygtk.lemoa"><img src="https://flathub.org/assets/badges/flathub-badge-en.png" width="150"/></a> |
-| AUR      | https://aur.archlinux.org/packages/lemoa-git
+| AUR      | https://aur.archlinux.org/packages/lemoa-git                                                                                                            |
 
 If you don't use any of these platforms, consider [building the app from source](#Building).
 
 # Screenshots
+
 ![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/community.png)
 ![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/posts.png)
 ![](https://raw.githubusercontent.com/lemmygtk/lemoa/main/data/screenshots/user.png)
@@ -37,10 +38,12 @@ If you don't use any of these platforms, consider [building the app from source]
 ### Flatpak installation doesn't follow the system Gtk theme
 
 In order to apply a different theme when using Flatpak, run
+
 ```
 flatpak override --filesystem=/usr/share/themes/
 flatpak override --env GTK_THEME=Adwaita-dark
 ```
+
 You can replace `Adwaita-dark` with the name of any other Gtk theme you have installed.
 
 If you don't use Flatpak, the correct Gtk Theme should be applied automatically.
@@ -57,7 +60,7 @@ If you don't use Flatpak, the correct Gtk Theme should be applied automatically.
 ## Building with meson
 
 ```
-meson _build
+meson --prefix="/usr" _build
 ninja -C _build
 sudo ninja -C _build install
 ```
@@ -79,6 +82,7 @@ Not recommended: To only install the binary (can only be started with the termin
 ```sh
 cargo install --git https://github.com/lemmygtk/lemoa.git
 ```
+
 s
 You can then start the app via the terminal after adding cargo's bin directory to your PATH variable.
 
@@ -91,6 +95,7 @@ cargo run
 ```
 
 # Credits
+
 - [Original Icon](https://game-icons.net/1x1/delapouite/rat.html) by [Delapouite](https://delapouite.com/) under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)
 - Modified icon with gradient by [Ategon](https://programming.dev/u/Ategon)
 - [Relm4](https://github.com/Relm4/Relm4) for providing such an awesome Gtk crate for Rust
