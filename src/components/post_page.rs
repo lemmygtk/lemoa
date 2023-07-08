@@ -176,8 +176,6 @@ impl SimpleComponent for PostPage {
                     }
                 },
 
-                gtk::Separator {},
-
                 #[local_ref]
                 comments -> gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,

@@ -48,8 +48,10 @@ impl FactoryComponent for CommentRow {
             set_orientation: gtk::Orientation::Vertical,
             set_spacing: 10,
             set_margin_end: 10,
-            set_margin_start: 10,
+            set_margin_start: ((self.comment.comment.path.matches('.').count() - 1) * 20 + 10) as i32,
             set_margin_top: 10,
+
+            gtk::Separator {},
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
@@ -107,8 +109,6 @@ impl FactoryComponent for CommentRow {
                     set_visible: self.comment.creator.id.0 == settings::get_current_account().id,
                 }
             },
-
-            gtk::Separator {}
         }
     }
 

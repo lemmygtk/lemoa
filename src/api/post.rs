@@ -1,3 +1,5 @@
+use crate::settings;
+use itertools::Itertools;
 use lemmy_api_common::{
     comment::{GetComments, GetCommentsResponse},
     lemmy_db_schema::{
@@ -9,8 +11,6 @@ use lemmy_api_common::{
         CreatePost, CreatePostLike, DeletePost, EditPost, GetPost, GetPostResponse, PostResponse,
     },
 };
-
-use crate::settings;
 
 pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
@@ -27,6 +27,7 @@ pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error>
         post_id: Some(post_id),
         sort: Some(CommentSortType::Hot),
         type_: Some(ListingType::All),
+        max_depth: Some(8),
         auth: settings::get_current_account().jwt,
         ..Default::default()
     };
@@ -36,7 +37,20 @@ pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error>
     // hide removed and deleted comments
     comments.retain(|c| !c.comment.deleted && !c.comment.removed);
 
-    Ok(comments)
+    // group comments by their parent and generate the tree structure known from the web interface
+    let mut grouped_comments: Vec<CommentView> = vec![];
+    for (_, comments_group) in &comments
+        .iter()
+        .group_by(|a| a.comment.path.split(".").collect::<Vec<&str>>()[1].to_owned())
+    {
+        let mut group = comments_group.collect::<Vec<&CommentView>>();
+        group.sort_by(|a, b| a.comment.path.partial_cmp(&b.comment.path).unwrap());
+        for c in group {
+            grouped_comments.push(c.clone());
+        }
+    }
+
+    Ok(grouped_comments)
 }
 
 pub fn default_post() -> GetPostResponse {
