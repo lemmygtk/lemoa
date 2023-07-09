@@ -17,12 +17,12 @@ pub fn fetch_instances(query_filter: &str) -> std::result::Result<Vec<Instance>,
         .send()?
         .json::<GetFederatedInstancesResponse>()?;
 
+    let lowercase_query_filter = query_filter.to_lowercase();
     match instances.federated_instances {
         Some(instances) => Ok(instances
             .linked
             .iter()
-            .filter(|instance| instance.software == Some("lemmy".to_owned()))
-            .filter(|instance| instance.domain.clone().contains(&query_filter.to_lowercase()))
+            .filter(|instance| instance.software == Some("lemmy".to_owned()) && instance.domain.clone().contains(&lowercase_query_filter))
             .map(|instance| instance.clone())
             .collect::<Vec<Instance>>()),
         None => Ok(vec![]),
