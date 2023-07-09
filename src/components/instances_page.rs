@@ -65,8 +65,8 @@ impl SimpleComponent for InstancesPage {
                             set_orientation: gtk::Orientation::Vertical,
                             set_spacing: 5,
                             set_vexpand: true,
-                            },
-                        }
+                        },
+                    }
                 } -> {
                     set_title: "Public",
                 },
