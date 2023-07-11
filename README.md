@@ -103,4 +103,3 @@ cargo run
 # License
 
 Lemoa is licensed under the [**GNU General Public License**](https://www.gnu.org/licenses/gpl.html): You can use, study and share it as you want.
-shshoshots
