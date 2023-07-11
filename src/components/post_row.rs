@@ -21,7 +21,9 @@ pub enum PostRowMsg {
     OpenPost,
     OpenCommunity,
     OpenPerson,
+    ToggleSaved,
     DeletePost,
+    UpdateSaved(bool),
 }
 
 #[relm4::factory(pub)]
@@ -98,6 +100,14 @@ impl FactoryComponent for PostRow {
                     set_halign: gtk::Align::Start,
                     set_text: &format!("{} comments", self.post.counts.comments.clone()),
                 },
+                gtk::ToggleButton {
+                    set_icon_name: "bookmark-new",
+                    set_margin_start: 10,
+                    connect_clicked => PostRowMsg::ToggleSaved,
+                    set_visible: settings::get_current_account().jwt.is_some(),
+                    #[watch]
+                    set_active: self.post.saved,
+                },
                 gtk::Button {
                     set_icon_name: "edit-delete",
                     connect_clicked => PostRowMsg::DeletePost,
@@ -160,6 +170,17 @@ impl FactoryComponent for PostRow {
             }
             PostRowMsg::OpenPost => {
                 sender.output(crate::AppMsg::OpenPost(self.post.post.id.clone()))
+            }
+            PostRowMsg::ToggleSaved => {
+                let post_id = self.post.post.id;
+                let new_state = !self.post.saved;
+                std::thread::spawn(move || match api::post::save_post(post_id, new_state) {
+                    Ok(post) => sender.input(PostRowMsg::UpdateSaved(post.post_view.saved)),
+                    Err(err) => println!("{}", err),
+                });
+            }
+            PostRowMsg::UpdateSaved(is_saved) => {
+                self.post.saved = is_saved;
             }
             PostRowMsg::DeletePost => {
                 let post_id = self.post.post.id;

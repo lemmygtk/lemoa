@@ -9,8 +9,10 @@ use lemmy_api_common::{
     lemmy_db_views::structs::CommentView,
     post::{
         CreatePost, CreatePostLike, DeletePost, EditPost, GetPost, GetPostResponse, PostResponse,
+        SavePost,
     },
 };
+use std::result::Result;
 
 pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
@@ -108,4 +110,13 @@ pub fn delete_post(post_id: PostId) -> Result<PostResponse, reqwest::Error> {
         auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/post/delete", &params)
+}
+
+pub fn save_post(post_id: PostId, save: bool) -> Result<PostResponse, reqwest::Error> {
+    let params = SavePost {
+        auth: settings::get_current_account().jwt.unwrap(),
+        post_id,
+        save,
+    };
+    super::put("/post/save", &params)
 }

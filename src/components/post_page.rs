@@ -42,6 +42,8 @@ pub enum PostPageInput {
     EditPostRequest(EditorData),
     CreatedComment(CommentView),
     OpenEditPostDialog,
+    ToggleSaved,
+    UpdateSaved(bool),
     DeletePost,
     DoneEditPost(PostView),
     PassAppMessage(crate::AppMsg),
@@ -173,7 +175,15 @@ impl SimpleComponent for PostPage {
                         connect_clicked => PostPageInput::OpenCreateCommentDialog,
                         #[watch]
                         set_visible: settings::get_current_account().jwt.is_some(),
-                    }
+                    },
+                    gtk::ToggleButton {
+                        set_icon_name: "bookmark-new",
+                        set_margin_start: 10,
+                        connect_clicked => PostPageInput::ToggleSaved,
+                        set_visible: settings::get_current_account().jwt.is_some(),
+                        #[watch]
+                        set_active: model.info.post_view.saved,
+                    },
                 },
 
                 #[local_ref]
@@ -309,6 +319,17 @@ impl SimpleComponent for PostPage {
                         sender.input(message)
                     };
                 });
+            }
+            PostPageInput::ToggleSaved => {
+                let post_id = self.info.post_view.post.id;
+                let new_state = !self.info.post_view.saved;
+                std::thread::spawn(move || match api::post::save_post(post_id, new_state) {
+                    Ok(post) => sender.input(PostPageInput::UpdateSaved(post.post_view.saved)),
+                    Err(err) => println!("{}", err),
+                });
+            }
+            PostPageInput::UpdateSaved(is_saved) => {
+                self.info.post_view.saved = is_saved;
             }
             PostPageInput::DeletePost => {
                 let post_id = self.info.post_view.post.id;
