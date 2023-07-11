@@ -46,6 +46,7 @@ pub enum AppState {
     Login,
     Message,
     Inbox,
+    Saved,
     AccountsPage,
 }
 
@@ -62,6 +63,7 @@ struct App {
     inbox_page: Controller<InboxPage>,
     login_page: Controller<LoginPage>,
     accounts_page: Controller<AccountsPage>,
+    saved_page: Controller<ProfilePage>,
     logged_in: bool,
     about_dialog: Controller<AboutDialog>,
 }
@@ -79,6 +81,7 @@ pub enum AppMsg {
     OpenPost(PostId),
     DoneFetchPost(GetPostResponse),
     OpenInbox,
+    OpenSaved,
     OpenCommunities,
     PopBackStack,
     UpdateState(AppState),
@@ -122,13 +125,19 @@ impl SimpleComponent for App {
                     #[watch]
                     set_visible: model.logged_in,
                 },
+                pack_start = &gtk::Button {
+                    set_label: "Saved",
+                    connect_clicked => AppMsg::OpenSaved,
+                    #[watch]
+                    set_visible: model.logged_in,
+                },
             },
 
             match model.state {
                 AppState::Posts => gtk::Box {
                     #[local_ref]
                     posts_page -> gtk::ScrolledWindow {}
-                },
+                }
                 AppState::Loading => gtk::Box {
                     set_hexpand: true,
                     set_orientation: gtk::Orientation::Vertical,
@@ -142,20 +151,19 @@ impl SimpleComponent for App {
                     gtk::Label {
                         set_text: "Loading",
                     },
-                },
+                }
                 AppState::ChooseInstance => gtk::Box {
                     #[local_ref]
                     instances_page -> gtk::Box {}
-                },
+                }
                 AppState::Login => gtk::Box {
                     #[local_ref]
                     login_page -> gtk::Box {}
-                },
+                }
                 AppState::Communities => gtk::Box {
                     #[local_ref]
                     communities_page -> gtk::Box {}
                 }
-
                 AppState::Person => {
                     gtk::Box {
                         #[local_ref]
@@ -194,6 +202,12 @@ impl SimpleComponent for App {
                     gtk::ScrolledWindow {
                         #[local_ref]
                         inbox_page -> gtk::Box {}
+                    }
+                }
+                AppState::Saved => {
+                    gtk::Box {
+                        #[local_ref]
+                        saved_page -> gtk::ScrolledWindow {}
                     }
                 }
                 AppState::AccountsPage => {
@@ -238,7 +252,7 @@ impl SimpleComponent for App {
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
         let profile_page = ProfilePage::builder()
-            .launch(default_person())
+            .launch((default_person(), false))
             .forward(sender.input_sender(), |msg| msg);
         let community_page = CommunityPage::builder()
             .launch(default_community().community_view)
@@ -261,6 +275,9 @@ impl SimpleComponent for App {
         let accounts_page = AccountsPage::builder()
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
+        let saved_page = ProfilePage::builder()
+            .launch((default_person(), true))
+            .forward(sender.input_sender(), |msg| msg);
 
         let model = App {
             state,
@@ -277,6 +294,7 @@ impl SimpleComponent for App {
             accounts_page,
             message: None,
             about_dialog,
+            saved_page,
         };
 
         // fetch posts if that's the initial page
@@ -294,6 +312,7 @@ impl SimpleComponent for App {
         let communities_page = model.communities_page.widget();
         let login_page = model.login_page.widget();
         let accounts_page = model.accounts_page.widget();
+        let saved_page = model.saved_page.widget();
 
         let widgets = view_output!();
 
@@ -419,6 +438,13 @@ impl SimpleComponent for App {
             AppMsg::OpenInbox => {
                 self.state = AppState::Inbox;
                 self.inbox_page.sender().emit(InboxInput::FetchInbox);
+            }
+            AppMsg::OpenSaved => {
+                let person_id = PersonId(settings::get_current_account().id);
+                self.state = AppState::Loading;
+                self.saved_page
+                    .sender()
+                    .emit(ProfileInput::FetchPerson(Some(person_id)));
             }
             AppMsg::LoggedIn => {
                 self.logged_in = true;

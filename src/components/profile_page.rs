@@ -24,6 +24,7 @@ pub struct ProfilePage {
     moderates: FactoryVecDeque<ModeratesRow>,
     editor_dialog: Controller<EditorDialog>,
     current_profile_page: i64,
+    saved_only: bool,
 }
 
 #[derive(Debug)]
@@ -36,7 +37,7 @@ pub enum ProfileInput {
 
 #[relm4::component(pub)]
 impl SimpleComponent for ProfilePage {
-    type Init = GetPersonDetailsResponse;
+    type Init = (GetPersonDetailsResponse, bool);
     type Input = ProfileInput;
     type Output = crate::AppMsg;
 
@@ -47,46 +48,52 @@ impl SimpleComponent for ProfilePage {
                 set_vexpand: false,
                 set_margin_all: 10,
 
-                #[local_ref]
-                avatar -> gtk::Box {
-                    set_size_request: (150, 150),
-                    set_margin_bottom: 20,
-                    set_margin_top: 20,
-                    #[watch]
-                    set_visible: model.info.person_view.person.avatar.is_some(),
-                },
-                gtk::Label {
-                    #[watch]
-                    set_text: &model.info.person_view.person.name,
-                    add_css_class: "font-very-bold",
-                },
-                gtk::Label {
-                    #[watch]
-                    set_markup: &markdown_to_pango_markup(model.info.person_view.person.bio.clone().unwrap_or("".to_string())),
-                    set_wrap: true,
-                    set_use_markup: true,
-                },
-
                 gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_margin_top: 10,
-                    set_margin_bottom: 10,
-                    set_hexpand: false,
-                    set_halign: gtk::Align::Center,
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_vexpand: false,
+                    set_visible: !model.saved_only,
 
+                    #[local_ref]
+                    avatar -> gtk::Box {
+                        set_size_request: (150, 150),
+                        set_margin_bottom: 20,
+                        set_margin_top: 20,
+                        #[watch]
+                        set_visible: model.info.person_view.person.avatar.is_some(),
+                    },
                     gtk::Label {
                         #[watch]
-                        set_text: &format!("{} posts, {} comments", model.info.person_view.counts.post_count, model.info.person_view.counts.comment_count),
+                        set_text: &model.info.person_view.person.name,
+                        add_css_class: "font-very-bold",
                     },
-                    gtk::Button {
-                        set_label: "Send message",
-                        connect_clicked => ProfileInput::SendMessageRequest,
-                        set_margin_start: 10,
-                        set_visible: settings::get_current_account().jwt.is_some(),
-                    }
-                },
+                    gtk::Label {
+                        #[watch]
+                        set_markup: &markdown_to_pango_markup(model.info.person_view.person.bio.clone().unwrap_or("".to_string())),
+                        set_wrap: true,
+                        set_use_markup: true,
+                    },
 
-                gtk::Separator {},
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_margin_top: 10,
+                        set_margin_bottom: 10,
+                        set_hexpand: false,
+                        set_halign: gtk::Align::Center,
+
+                        gtk::Label {
+                            #[watch]
+                            set_text: &format!("{} posts, {} comments", model.info.person_view.counts.post_count, model.info.person_view.counts.comment_count),
+                        },
+                        gtk::Button {
+                            set_label: "Send message",
+                            connect_clicked => ProfileInput::SendMessageRequest,
+                            set_margin_start: 10,
+                            set_visible: settings::get_current_account().jwt.is_some(),
+                        }
+                    },
+
+                    gtk::Separator {},
+                },
 
                 gtk::StackSwitcher {
                     set_stack: Some(&stack),
@@ -131,7 +138,7 @@ impl SimpleComponent for ProfilePage {
     }
 
     fn init(
-        init: Self::Init,
+        (info, saved_only): Self::Init,
         root: &Self::Root,
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
@@ -147,13 +154,14 @@ impl SimpleComponent for ProfilePage {
                 _ => unreachable!(),
             });
         let model = ProfilePage {
-            info: init,
+            info,
             avatar,
             posts,
             comments,
             moderates,
             editor_dialog,
             current_profile_page: 1,
+            saved_only,
         };
         let avatar = model.avatar.widget();
         let posts = model.posts.widget();
@@ -206,8 +214,9 @@ impl SimpleComponent for ProfilePage {
                 };
                 self.current_profile_page = page;
                 let person_id = person_id.unwrap_or(self.info.person_view.person.id);
+                let saved_only = self.saved_only;
                 std::thread::spawn(move || {
-                    match api::user::get_user(person_id, page) {
+                    match api::user::get_user(person_id, page, saved_only) {
                         Ok(person) => {
                             sender.input(ProfileInput::UpdatePerson(person, page == 1));
                         }

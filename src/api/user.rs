@@ -11,11 +11,13 @@ use crate::settings;
 pub fn get_user(
     id: PersonId,
     page: i64,
+    saved_only: bool,
 ) -> std::result::Result<GetPersonDetailsResponse, reqwest::Error> {
     let params = GetPersonDetails {
         page: Some(page),
         person_id: Some(id),
         auth: settings::get_current_account().jwt,
+        saved_only: Some(saved_only),
         ..Default::default()
     };
 
