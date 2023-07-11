@@ -19,19 +19,17 @@ If you don't use any of these platforms, consider [building the app from source]
 
 # Features
 
-- Listing trending posts
-- Viewing a post and its comments
-- Viewing profiles
-- Viewing trending communities
-- Searching communities
+- Listing trending or subcribed posts
+- Viewing posts and their comments
+- Viewing own profile and other user accounts
+- Viewing and searching communities
 - Logging in with an account
-- Writing posts or comments
-- Viewing subscribed posts
-- Following communities
-- Voting for or against posts or comments
-- Editing and deleting posts or comments
+- Writing, editing and deleting posts or comments
+- {,Un-}Following communities
+- {Up,Down}-Voting posts or comments
 - Viewing the personal inbox (mentions, replies)
-- Private messages
+- Reading and writing private messages
+- Saving posts and comments as bookmarks
 
 # Troubleshooting
 
