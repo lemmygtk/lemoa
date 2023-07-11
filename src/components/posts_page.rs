@@ -77,7 +77,7 @@ impl SimpleComponent for PostsPage {
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let model = Self {
             posts,
-            posts_type: ListingType::Subscribed,
+            posts_type: ListingType::Local,
             posts_page: 1,
         };
         let posts_box = model.posts.widget();

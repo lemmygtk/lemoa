@@ -466,7 +466,7 @@ impl SimpleComponent for App {
             AppMsg::OpenPosts => self
                 .posts_page
                 .sender()
-                .emit(PostsPageInput::FetchPosts(ListingType::Subscribed, true)),
+                .emit(PostsPageInput::FetchPosts(ListingType::Local, true)),
         }
     }
 }
