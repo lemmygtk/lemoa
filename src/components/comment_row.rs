@@ -28,6 +28,7 @@ pub struct CommentRow {
 pub enum CommentRowMsg {
     OpenPerson,
     DeleteComment,
+    ToggleSaved,
     OpenEditor(bool),
     EditCommentRequest(EditorData),
     CreateCommentRequest(EditorData),
@@ -95,6 +96,15 @@ impl FactoryComponent for CommentRow {
                     connect_clicked => CommentRowMsg::OpenEditor(true),
                     #[watch]
                     set_visible: settings::get_current_account().jwt.is_some(),
+                },
+
+                gtk::ToggleButton {
+                    set_icon_name: "bookmark-new",
+                    set_margin_start: 5,
+                    connect_clicked => CommentRowMsg::ToggleSaved,
+                    set_visible: settings::get_current_account().jwt.is_some(),
+                    #[watch]
+                    set_active: self.comment.saved,
                 },
 
                 gtk::Button {
@@ -212,6 +222,18 @@ impl FactoryComponent for CommentRow {
                             println!("{}", err.to_string());
                         }
                     };
+                });
+            }
+            CommentRowMsg::ToggleSaved => {
+                let comment_id = self.comment.comment.id;
+                let new_state = !self.comment.saved;
+                std::thread::spawn(move || {
+                    match api::comment::save_comment(comment_id, new_state) {
+                        Ok(comment) => {
+                            sender.input(CommentRowMsg::UpdateComment(comment.comment_view))
+                        }
+                        Err(err) => println!("{}", err),
+                    }
                 });
             }
         }

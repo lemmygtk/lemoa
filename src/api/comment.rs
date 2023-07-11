@@ -1,5 +1,7 @@
 use lemmy_api_common::{
-    comment::{CommentResponse, CreateComment, CreateCommentLike, DeleteComment, EditComment},
+    comment::{
+        CommentResponse, CreateComment, CreateCommentLike, DeleteComment, EditComment, SaveComment,
+    },
     lemmy_db_schema::newtypes::{CommentId, PostId},
 };
 
@@ -30,7 +32,10 @@ pub fn like_comment(comment_id: CommentId, score: i16) -> Result<CommentResponse
     super::post("/comment/like", &params)
 }
 
-pub fn edit_comment(body: String, comment_id: CommentId) -> Result<CommentResponse, reqwest::Error> {
+pub fn edit_comment(
+    body: String,
+    comment_id: CommentId,
+) -> Result<CommentResponse, reqwest::Error> {
     let params = EditComment {
         content: Some(body),
         comment_id,
@@ -47,4 +52,13 @@ pub fn delete_comment(comment_id: CommentId) -> Result<CommentResponse, reqwest:
         auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/comment/delete", &params)
+}
+
+pub fn save_comment(comment_id: CommentId, save: bool) -> Result<CommentResponse, reqwest::Error> {
+    let params = SaveComment {
+        auth: settings::get_current_account().jwt.unwrap(),
+        comment_id,
+        save,
+    };
+    super::put("/comment/save", &params)
 }
