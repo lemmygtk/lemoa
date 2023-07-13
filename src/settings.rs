@@ -64,6 +64,10 @@ pub fn update_account(account: Account, index: usize) {
 pub fn remove_account(index: usize) {
     let mut settings = get_prefs();
     settings.accounts.remove(index);
+    // if the deleted account has been before the current one, the current index needs to decreased too
+    if index < settings.current_account_index as usize {
+        settings.current_account_index = settings.current_account_index - 1;
+    }
     save_prefs(&settings);
 }
 
