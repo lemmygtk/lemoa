@@ -175,9 +175,14 @@ impl SimpleComponent for ProfilePage {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             ProfileInput::UpdatePerson(person, clear) => {
+                let state = if self.saved_only {
+                    crate::AppState::Saved
+                } else {
+                    crate::AppState::Person
+                };
                 sender
                     .output_sender()
-                    .emit(crate::AppMsg::UpdateState(crate::AppState::Person));
+                    .emit(crate::AppMsg::UpdateState(state));
 
                 if clear {
                     self.info = person.clone();
