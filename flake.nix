@@ -12,7 +12,7 @@
     packages = rec {
         lemoa = pkgs.rustPlatform.buildRustPackage {
             pname = "lemoa";
-            version = "0.2.0";
+            version = "0.3.0";
             src = ./.;
             buildInputs = with pkgs; [
                 openssl
@@ -27,9 +27,6 @@
             ];
             cargoLock = {
                 lockFile = ./Cargo.lock;
-                outputHashes = {
-                    "lemmy_api_common-0.18.0" = "sha256-l4UNO5Obx73nOiVnl6dc+sw2tekDLn2ixTs1GwqdE8I=";
-                };
             };
             meta = with pkgs.lib; {
                 description = "Native Gtk client for Lemmy";

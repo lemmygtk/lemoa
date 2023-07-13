@@ -26,6 +26,24 @@
   <url type="bugtracker">https://github.com/lemmygtk/lemoa/issues</url>
   <content_rating type="oars-1.0" />
   <releases>
+  <release version="0.3.0" date="2023-07-13">
+      <description>
+        <ul>
+          <li>Support for replying to comments</li>
+          <li>New, more polished app icon</li>
+          <li>Support for viewing comments by a user</li>
+          <li>Support for viewing the next pages of a profile</li>
+          <li>Show communities moderated by a person</li>
+          <li>Initial support for multiple account profiles</li>
+          <li>Support for comment nesting with a tree structure</li>
+          <li>Possibility to search instances in public tab (#16)</li>
+          <li>Support for bookmarking posts</li>
+          <li>Support for saving/bookmarking comments</li>
+          <li>Support for viewing saved posts and comments</li>
+          <li>Add user agent for http requests</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2023-06-30">
       <description>
         <ul>
