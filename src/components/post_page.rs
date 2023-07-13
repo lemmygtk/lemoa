@@ -60,6 +60,7 @@ impl SimpleComponent for PostPage {
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
                 set_vexpand: false,
+                set_hexpand: true,
                 set_margin_all: 10,
 
                 #[local_ref]
@@ -91,6 +92,8 @@ impl SimpleComponent for PostPage {
                     set_markup: &markdown_to_pango_markup(model.info.post_view.post.body.clone().unwrap_or("".to_string())),
                     set_wrap: true,
                     set_margin_top: 10,
+                    set_margin_start: 15,
+                    set_margin_end: 15,
                     set_use_markup: true,
                 },
 
