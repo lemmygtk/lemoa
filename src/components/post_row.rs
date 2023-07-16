@@ -13,6 +13,7 @@ pub struct PostRow {
     post: PostView,
     author_image: Controller<WebImage>,
     community_image: Controller<WebImage>,
+    thumbnail: Controller<WebImage>,
     voting_row: Controller<VotingRowModel>,
 }
 
@@ -38,82 +39,102 @@ impl FactoryComponent for PostRow {
     view! {
         root = gtk::Box {
             set_orientation: gtk::Orientation::Vertical,
-            set_spacing: 10,
             set_margin_end: 10,
             set_margin_start: 10,
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
-                set_margin_top: 10,
                 set_spacing: 10,
-                set_vexpand: false,
-                set_hexpand: true,
 
                 #[local_ref]
-                community_image -> gtk::Box {
-                    set_hexpand: false,
-                    set_visible: self.post.community.icon.clone().is_some(),
-                },
-
-                gtk::Button {
-                    set_label: &self.post.community.title,
-                    connect_clicked => PostRowMsg::OpenCommunity,
-                },
-
-                #[local_ref]
-                author_image -> gtk::Box {
-                    set_hexpand: false,
+                thumbnail -> gtk::Box {
+                    set_visible: self.post.post.thumbnail_url.is_some(),
+                    set_size_request: (180, 180),
                     set_margin_start: 10,
-                    set_visible: self.post.creator.avatar.clone().is_some(),
-                },
-
-                gtk::Button {
-                    set_label: &self.post.creator.name,
-                    connect_clicked => PostRowMsg::OpenPerson,
-                },
-
-                gtk::Label {
-                    set_margin_start: 10,
-                    set_label: &util::format_elapsed_time(self.post.post.published),
-                }
-            },
-
-            gtk::Label {
-                set_halign: gtk::Align::Start,
-                set_text: &self.post.post.name,
-                set_wrap: true,
-                add_css_class: "font-bold",
-                add_controller = gtk::GestureClick {
-                    connect_pressed[sender] => move |_, _, _, _| {
-                        sender.input(PostRowMsg::OpenPost);
-                    }
-                },
-            },
-
-            gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                #[local_ref]
-                voting_row -> gtk::Box {
                     set_margin_end: 10,
+                    set_hexpand: false,
+                    set_valign: gtk::Align::Center,
                 },
-                gtk::Label {
-                    set_halign: gtk::Align::Start,
-                    set_text: &format!("{} comments", self.post.counts.comments.clone()),
-                },
-                gtk::ToggleButton {
-                    set_icon_name: "bookmark-new",
-                    set_margin_start: 10,
-                    connect_clicked => PostRowMsg::ToggleSaved,
-                    set_visible: settings::get_current_account().jwt.is_some(),
-                    #[watch]
-                    set_active: self.post.saved,
-                },
-                gtk::Button {
-                    set_icon_name: "edit-delete",
-                    connect_clicked => PostRowMsg::DeletePost,
-                    set_margin_start: 10,
-                    #[watch]
-                    set_visible: self.post.creator.id.0 == settings::get_current_account().id,
+
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Center,
+                    set_spacing: 10,
+                    set_hexpand: true,
+
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_margin_top: 10,
+                        set_spacing: 10,
+                        set_vexpand: false,
+
+                        #[local_ref]
+                        community_image -> gtk::Box {
+                            set_hexpand: false,
+                            set_visible: self.post.community.icon.clone().is_some(),
+                        },
+
+                        gtk::Button {
+                            set_label: &self.post.community.title,
+                            connect_clicked => PostRowMsg::OpenCommunity,
+                        },
+
+                        #[local_ref]
+                        author_image -> gtk::Box {
+                            set_hexpand: false,
+                            set_margin_start: 10,
+                            set_visible: self.post.creator.avatar.clone().is_some(),
+                        },
+
+                        gtk::Button {
+                            set_label: &self.post.creator.name,
+                            connect_clicked => PostRowMsg::OpenPerson,
+                        },
+
+                        gtk::Label {
+                            set_margin_start: 10,
+                            set_label: &util::format_elapsed_time(self.post.post.published),
+                        }
+                    },
+
+                    gtk::Label {
+                        set_halign: gtk::Align::Start,
+                        set_text: &self.post.post.name,
+                        set_wrap: true,
+                        add_css_class: "font-bold",
+                        add_controller = gtk::GestureClick {
+                            connect_pressed[sender] => move |_, _, _, _| {
+                                sender.input(PostRowMsg::OpenPost);
+                            }
+                        },
+                    },
+
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        #[local_ref]
+                        voting_row -> gtk::Box {
+                            set_margin_end: 10,
+                        },
+                        gtk::Label {
+                            set_halign: gtk::Align::Start,
+                            set_text: &format!("{} comments", self.post.counts.comments.clone()),
+                        },
+                        gtk::ToggleButton {
+                            set_icon_name: "bookmark-new",
+                            set_margin_start: 10,
+                            connect_clicked => PostRowMsg::ToggleSaved,
+                            set_visible: settings::get_current_account().jwt.is_some(),
+                            #[watch]
+                            set_active: self.post.saved,
+                        },
+                        gtk::Button {
+                            set_icon_name: "edit-delete",
+                            connect_clicked => PostRowMsg::DeletePost,
+                            set_margin_start: 10,
+                            #[watch]
+                            set_visible: self.post.creator.id.0 == settings::get_current_account().id,
+                        }
+                    },
                 }
             },
 
@@ -128,6 +149,9 @@ impl FactoryComponent for PostRow {
     }
 
     fn init_model(value: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
+        let thumbnail = WebImage::builder()
+            .launch(get_web_image_url(value.post.thumbnail_url.clone()))
+            .detach();
         let author_image = WebImage::builder()
             .launch(get_web_image_url(value.creator.avatar.clone()))
             .detach();
@@ -143,6 +167,7 @@ impl FactoryComponent for PostRow {
             author_image,
             community_image,
             voting_row,
+            thumbnail,
         }
     }
 
@@ -153,6 +178,7 @@ impl FactoryComponent for PostRow {
         _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
+        let thumbnail = self.thumbnail.widget();
         let author_image = self.author_image.widget();
         let community_image = self.community_image.widget();
         let voting_row = self.voting_row.widget();
