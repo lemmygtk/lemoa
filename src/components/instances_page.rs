@@ -8,7 +8,7 @@ use super::instance_row::InstanceRow;
 
 pub struct InstancesPage {
     instances: FactoryVecDeque<InstanceRow>,
-    instances_search_buffer: gtk::EntryBuffer
+    instances_search_buffer: gtk::EntryBuffer,
 }
 
 #[derive(Debug)]
@@ -43,10 +43,10 @@ impl SimpleComponent for InstancesPage {
                 add_child = &gtk::ScrolledWindow {
                     set_vexpand: true,
                     set_hexpand: true,
+
                     gtk::Box {
                         set_orientation: gtk::Orientation::Vertical,
                         set_spacing: 10,
-                        set_margin_all: 10,
 
                         gtk::Box {
                             set_spacing: 10,
@@ -58,12 +58,14 @@ impl SimpleComponent for InstancesPage {
                             gtk::Button {
                                 set_label: "Filter",
                                 connect_clicked => InstancesPageInput::FetchInstances,
-                                }
-                            },
+                            }
+                        },
+
                         #[local_ref]
                         instances -> gtk::Box {
                             set_orientation: gtk::Orientation::Vertical,
                             set_spacing: 5,
+                            set_margin_all: 10,
                             set_vexpand: true,
                         },
                     }
@@ -104,7 +106,10 @@ impl SimpleComponent for InstancesPage {
     ) -> ComponentParts<Self> {
         let instances = FactoryVecDeque::new(gtk::Box::default(), sender.input_sender());
         let instances_search_buffer = gtk::EntryBuffer::builder().build();
-        let model = Self { instances, instances_search_buffer };
+        let model = Self {
+            instances,
+            instances_search_buffer,
+        };
         let instances = model.instances.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -113,7 +118,7 @@ impl SimpleComponent for InstancesPage {
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             InstancesPageInput::FetchInstances => {
-                let filter =  self.instances_search_buffer.text().as_str().to_owned();
+                let filter = self.instances_search_buffer.text().as_str().to_owned();
                 std::thread::spawn(move || {
                     let message = match api::instances::fetch_instances(&filter) {
                         Ok(instances) => Some(InstancesPageInput::DoneFetchInstances(instances)),
