@@ -106,9 +106,7 @@ impl SimpleComponent for VotingRowModel {
         match message {
             VotingRowInput::Vote(vote) => {
                 let mut score = self.stats.own_vote.unwrap_or(0) + vote;
-                if score < -1 || score > 1 {
-                    score = 0
-                };
+                if !(-1..=1).contains(&score) { score = 0 };
                 if settings::get_current_account().jwt.is_none() {
                     return;
                 }
@@ -116,9 +114,7 @@ impl SimpleComponent for VotingRowModel {
                 std::thread::spawn(move || {
                     let info = if stats.post_id.is_some() {
                         let response = api::post::like_post(
-                            PostId {
-                                0: stats.post_id.unwrap(),
-                            },
+                            PostId(stats.post_id.unwrap()),
                             score,
                         );
                         match response {
@@ -127,15 +123,13 @@ impl SimpleComponent for VotingRowModel {
                                 post.post_view.my_vote,
                             )),
                             Err(err) => {
-                                println!("{}", err.to_string());
+                                println!("{}", err);
                                 None
                             }
                         }
                     } else {
                         let response = api::comment::like_comment(
-                            CommentId {
-                                0: stats.comment_id.unwrap(),
-                            },
+                            CommentId(stats.comment_id.unwrap()),
                             score,
                         );
                         match response {
@@ -144,7 +138,7 @@ impl SimpleComponent for VotingRowModel {
                                 comment.comment_view.my_vote,
                             )),
                             Err(err) => {
-                                println!("{}", err.to_string());
+                                println!("{}", err);
                                 None
                             }
                         }

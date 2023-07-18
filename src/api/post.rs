@@ -43,7 +43,7 @@ pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error>
     let mut grouped_comments: Vec<CommentView> = vec![];
     for (_, comments_group) in &comments
         .iter()
-        .group_by(|a| a.comment.path.split(".").collect::<Vec<&str>>()[1].to_owned())
+        .group_by(|a| a.comment.path.split('.').collect::<Vec<&str>>()[1].to_owned())
     {
         let mut group = comments_group.collect::<Vec<&CommentView>>();
         group.sort_by(|a, b| a.comment.path.partial_cmp(&b.comment.path).unwrap());

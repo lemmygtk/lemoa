@@ -273,13 +273,13 @@ impl SimpleComponent for PostPage {
                 }
             }
             PostPageInput::OpenPerson => {
-                let person_id = self.info.post_view.creator.id.clone();
+                let person_id = self.info.post_view.creator.id;
                 sender
                     .output_sender()
                     .emit(crate::AppMsg::OpenPerson(person_id));
             }
             PostPageInput::OpenCommunity => {
-                let community_id = self.info.community_view.community.id.clone();
+                let community_id = self.info.community_view.community.id;
                 sender
                     .output_sender()
                     .emit(crate::AppMsg::OpenCommunity(community_id));
@@ -314,7 +314,7 @@ impl SimpleComponent for PostPage {
                     let message = match api::comment::create_comment(id, post.body, None) {
                         Ok(comment) => Some(PostPageInput::CreatedComment(comment.comment_view)),
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                             None
                         }
                     };
@@ -368,7 +368,7 @@ impl SimpleComponent for PostPage {
                     let message = match api::post::edit_post(post.name, post.url, post.body, id) {
                         Ok(post) => Some(PostPageInput::DoneEditPost(post.post_view)),
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                             None
                         }
                     };

@@ -203,12 +203,12 @@ impl SimpleComponent for CommunityPage {
                 self.posts.guard().push_front(post);
             }
             CommunityInput::CreatePostRequest(post) => {
-                let id = self.info.community.id.0.clone();
+                let id = self.info.community.id.0;
                 std::thread::spawn(move || {
                     let message = match api::post::create_post(post.name, post.body, post.url, id) {
                         Ok(post) => Some(CommunityInput::CreatedPost(post.post_view)),
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                             None
                         }
                     };
@@ -219,22 +219,19 @@ impl SimpleComponent for CommunityPage {
             }
             CommunityInput::ToggleSubscription => {
                 let community_id = self.info.community.id.0;
-                let new_state = match self.info.subscribed {
-                    SubscribedType::NotSubscribed => true,
-                    _ => false,
-                };
+                let new_state = matches!(self.info.subscribed, SubscribedType::NotSubscribed); 
                 std::thread::spawn(move || {
                     let message = match api::community::follow_community(community_id, new_state) {
                         Ok(community) => Some(CommunityInput::UpdateSubscriptionState(
                             community.community_view.subscribed,
                         )),
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                             None
                         }
                     };
-                    if message.is_some() {
-                        sender.input(message.unwrap())
+                    if let Some(message) = message {
+                        sender.input(message)
                     };
                 });
             }

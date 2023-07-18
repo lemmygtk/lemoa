@@ -30,7 +30,7 @@ pub static CLIENT: Lazy<Client> = Lazy::new(|| {
 });
 
 fn get_api_url() -> String {
-    format!("{}/api/{}", get_current_account().instance_url, API_VERSION).to_string()
+    format!("{}/api/{}", get_current_account().instance_url, API_VERSION)
 }
 
 fn get_url(path: &str) -> String {
@@ -42,7 +42,7 @@ where
     T: DeserializeOwned,
     Params: Serialize + std::fmt::Debug,
 {
-    CLIENT.get(&get_url(path)).query(&params).send()?.json()
+    CLIENT.get(get_url(path)).query(&params).send()?.json()
 }
 
 fn post<T, Params>(path: &str, params: &Params) -> Result<T, reqwest::Error>
@@ -50,7 +50,7 @@ where
     T: DeserializeOwned,
     Params: Serialize + std::fmt::Debug,
 {
-    CLIENT.post(&get_url(path)).json(&params).send()?.json()
+    CLIENT.post(get_url(path)).json(&params).send()?.json()
 }
 
 fn put<T, Params>(path: &str, params: &Params) -> Result<T, reqwest::Error>
@@ -58,5 +58,5 @@ where
     T: DeserializeOwned,
     Params: Serialize + std::fmt::Debug,
 {
-    CLIENT.put(&get_url(path)).json(&params).send()?.json()
+    CLIENT.put(get_url(path)).json(&params).send()?.json()
 }

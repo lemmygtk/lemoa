@@ -168,7 +168,7 @@ impl FactoryComponent for CommentRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             CommentRowMsg::OpenPerson => {
-                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id.clone()));
+                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id));
             }
             CommentRowMsg::DeleteComment => {
                 let comment_id = self.comment.comment.id;
@@ -201,7 +201,7 @@ impl FactoryComponent for CommentRow {
                     let message = match api::comment::edit_comment(data.body, id) {
                         Ok(comment) => Some(CommentRowMsg::UpdateComment(comment.comment_view)),
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                             None
                         }
                     };
@@ -219,7 +219,7 @@ impl FactoryComponent for CommentRow {
                             // TODO sender.output_sender().emit(PostPageInput::CreatedComment(comment.comment_view));
                         }
                         Err(err) => {
-                            println!("{}", err.to_string());
+                            println!("{}", err);
                         }
                     };
                 });

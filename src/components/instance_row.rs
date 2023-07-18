@@ -79,7 +79,7 @@ impl FactoryComponent for InstanceRow {
         match message {
             InstanceRowMsg::OpenInstance => {
                 let instance_address = format!("https://{}", self.instance.domain);
-                sender.output(InstancesPageInput::SetInstance(instance_address.clone()))
+                sender.output(InstancesPageInput::SetInstance(instance_address))
             }
         }
     }

@@ -189,13 +189,13 @@ impl FactoryComponent for PostRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             PostRowMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(self.post.community.id.clone()))
+                sender.output(crate::AppMsg::OpenCommunity(self.post.community.id))
             }
             PostRowMsg::OpenPerson => {
-                sender.output(crate::AppMsg::OpenPerson(self.post.creator.id.clone()))
+                sender.output(crate::AppMsg::OpenPerson(self.post.creator.id))
             }
             PostRowMsg::OpenPost => {
-                sender.output(crate::AppMsg::OpenPost(self.post.post.id.clone()))
+                sender.output(crate::AppMsg::OpenPost(self.post.post.id))
             }
             PostRowMsg::ToggleSaved => {
                 let post_id = self.post.post.id;

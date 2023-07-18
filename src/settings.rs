@@ -35,16 +35,16 @@ pub fn get_prefs() -> Preferences {
     if let Ok(file) = File::open(data_path()) {
         // Deserialize data from file to vector
         let prefs: Result<Preferences, serde_json::Error> = serde_json::from_reader(file);
-        if prefs.is_ok() {
-            return prefs.unwrap();
+        if let Ok(prefs) = prefs {
+            return prefs;
         }
     }
-    return Preferences::default();
+    Preferences::default()
 }
 
 pub fn get_current_account() -> Account {
     let mut prefs = get_prefs();
-    if prefs.accounts.len() == 0 {
+    if prefs.accounts.is_empty() {
         prefs = create_account(true);
     }
     prefs.accounts[prefs.current_account_index as usize].clone()
@@ -66,7 +66,7 @@ pub fn remove_account(index: usize) {
     settings.accounts.remove(index);
     // if the deleted account has been before the current one, the current index needs to decreased too
     if index < settings.current_account_index as usize {
-        settings.current_account_index = settings.current_account_index - 1;
+        settings.current_account_index -= 1;
     }
     save_prefs(&settings);
 }

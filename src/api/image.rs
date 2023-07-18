@@ -31,16 +31,16 @@ pub fn upload_image(image: std::path::PathBuf) -> Result<String, reqwest::Error>
 
     let part = Part::bytes(data)
         .file_name(file_name)
-        .mime_str(&mime_type.unwrap().essence_str())?;
+        .mime_str(mime_type.unwrap().essence_str())?;
     let form = reqwest::blocking::multipart::Form::new().part("images[]", part);
     let account = settings::get_current_account();
     let base_url = account.instance_url;
     let path = format!("{}/pictrs/image", base_url);
     let res: UploadImageResponse = CLIENT
-        .post(&path)
+        .post(path)
         .header(
             "cookie",
-            format!("jwt={}", account.jwt.unwrap().to_string()),
+            format!("jwt={}", account.jwt.unwrap().into_inner()),
         )
         .multipart(form)
         .send()?

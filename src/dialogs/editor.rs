@@ -207,7 +207,7 @@ impl SimpleComponent for EditorDialog {
                 if let Some(url) = data.url {
                     self.url_buffer.set_text(url.to_string());
                 }
-                self.body_buffer.set_text(&data.body.clone());
+                self.body_buffer.set_text(&data.body);
             }
             DialogMsg::ChooseImage => {
                 let buttons = [

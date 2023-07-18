@@ -154,14 +154,14 @@ impl FactoryComponent for MentionRow {
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
             MentionRowMsg::OpenPerson => {
-                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id.clone()));
+                sender.output(crate::AppMsg::OpenPerson(self.comment.creator.id));
             }
             MentionRowMsg::OpenPost => {
-                sender.output(crate::AppMsg::OpenPost(self.comment.post.id.clone()));
+                sender.output(crate::AppMsg::OpenPost(self.comment.post.id));
             }
             MentionRowMsg::OpenCommunity => {
                 sender.output(crate::AppMsg::OpenCommunity(
-                    self.comment.community.id.clone(),
+                    self.comment.community.id,
                 ));
             }
         }

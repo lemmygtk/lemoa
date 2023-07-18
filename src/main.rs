@@ -333,9 +333,8 @@ impl SimpleComponent for App {
                 profile_sender.input(AppMsg::OpenPerson(PersonId(person.id)));
             }
         });
-        let login_sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
-            login_sender.input(AppMsg::UpdateState(AppState::Login));
+            sender.input(AppMsg::UpdateState(AppState::Login));
         });
         let about_action = {
             let sender = model.about_dialog.sender().clone();

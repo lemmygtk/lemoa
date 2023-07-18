@@ -126,8 +126,8 @@ impl SimpleComponent for InboxPage {
         match message {
             InboxInput::FetchInbox => {
                 let type_ = self.type_.clone();
-                let page = self.page.clone();
-                let unread_only = self.unread_only.clone();
+                let page = self.page;
+                let unread_only = self.unread_only;
                 std::thread::spawn(move || {
                     let message = match type_ {
                         InboxType::Mentions => {
@@ -135,11 +135,7 @@ impl SimpleComponent for InboxPage {
                                 // It's just a different object, but its contents are exactly the same
                                 let serialised = serde_json::to_string(&response.mentions).unwrap();
                                 let mentions = serde_json::from_str(&serialised).ok();
-                                if let Some(mentions) = mentions {
-                                    Some(InboxInput::UpdateInbox(mentions))
-                                } else {
-                                    None
-                                }
+                                mentions.map(InboxInput::UpdateInbox)
                             } else {
                                 None
                             }
@@ -187,7 +183,7 @@ impl SimpleComponent for InboxPage {
                 }
             }
             InboxInput::MarkAllAsRead => {
-                let show_unread_only = self.unread_only.clone();
+                let show_unread_only = self.unread_only;
                 std::thread::spawn(move || {
                     if api::user::mark_all_as_read().is_ok() && show_unread_only {
                         sender.input(InboxInput::UpdateInbox(vec![]));
