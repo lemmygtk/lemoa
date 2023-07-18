@@ -10,7 +10,7 @@ use crate::api;
 pub struct EditorData {
     pub name: String,
     pub body: String,
-    pub url: Option<reqwest::Url>
+    pub url: Option<reqwest::Url>,
 }
 
 pub struct EditorDialog {
