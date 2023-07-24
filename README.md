@@ -82,7 +82,7 @@ Not recommended: To only install the binary (can only be started with the termin
 cargo install --git https://github.com/lemmygtk/lemoa.git
 ```
 
-s
+
 You can then start the app via the terminal after adding cargo's bin directory to your PATH variable.
 
 # Development
