@@ -4,7 +4,7 @@ use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
-use super::{post_row::PostRow, sort_dropown::{SortDropdown, SortDropdownOutput}};
+use super::{post_row::PostRow, sort_dropdown::{SortDropdown, SortDropdownOutput}};
 
 pub struct PostsPage {
     sort_dropdown: Controller<SortDropdown>,
@@ -63,7 +63,9 @@ impl SimpleComponent for PostsPage {
                     },
 
                     #[local_ref]
-                    sort_dropdown -> gtk::DropDown {},
+                    sort_dropdown -> gtk::DropDown {
+                        set_margin_end: 10,
+                    },
                 },
                 #[local_ref]
                 posts_box -> gtk::Box {

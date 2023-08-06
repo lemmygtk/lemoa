@@ -4,7 +4,7 @@ use crate::{
 };
 use gtk::prelude::*;
 use lemmy_api_common::{
-    lemmy_db_schema::SubscribedType, lemmy_db_views::structs::PostView,
+    lemmy_db_schema::{SubscribedType, SortType}, lemmy_db_views::structs::PostView,
     lemmy_db_views_actor::structs::CommunityView,
 };
 use relm4::{factory::FactoryVecDeque, prelude::*};
@@ -12,14 +12,16 @@ use relm4_components::web_image::WebImage;
 
 use crate::{api, settings, util::get_web_image_msg};
 
-use super::post_row::PostRow;
+use super::{post_row::PostRow, sort_dropdown::{SortDropdown, SortDropdownOutput}};
 
 pub struct CommunityPage {
     info: CommunityView,
     avatar: Controller<WebImage>,
+    sort_dropdown: Controller<SortDropdown>,
     posts: FactoryVecDeque<PostRow>,
     #[allow(dead_code)]
     create_post_dialog: Controller<EditorDialog>,
+    current_sort_type: SortType,
     current_posts_page: i64,
 }
 
@@ -33,6 +35,7 @@ pub enum CommunityInput {
     CreatedPost(PostView),
     ToggleSubscription,
     UpdateSubscriptionState(SubscribedType),
+    UpdateOrder(SortType),
     None,
 }
 
@@ -117,6 +120,12 @@ impl SimpleComponent for CommunityPage {
                     }
                 },
 
+                #[local_ref]
+                sort_dropdown -> gtk::DropDown {
+                    set_margin_top: 10,
+                    set_halign: gtk::Align::Start,
+                },
+
                 gtk::Separator {
                     set_margin_top: 10,
                 },
@@ -143,6 +152,11 @@ impl SimpleComponent for CommunityPage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
+        let sort_dropdown = SortDropdown::builder().launch(()).forward(sender.input_sender(), |msg| {
+            match msg {
+                SortDropdownOutput::New(sort_order) => CommunityInput::UpdateOrder(sort_order),
+            }
+        });
 
         let dialog = EditorDialog::builder()
             .transient_for(root)
@@ -155,11 +169,14 @@ impl SimpleComponent for CommunityPage {
         let model = CommunityPage {
             info: init,
             avatar,
+            sort_dropdown,
             posts,
             create_post_dialog: dialog,
+            current_sort_type: SortType::Hot,
             current_posts_page: 0,
         };
         let avatar = model.avatar.widget();
+        let sort_dropdown = model.sort_dropdown.widget();
         let posts = model.posts.widget();
         let widgets = view_output!();
 
@@ -181,10 +198,11 @@ impl SimpleComponent for CommunityPage {
             }
             CommunityInput::FetchPosts => {
                 let name = self.info.community.name.clone();
+                let sort_type = self.current_sort_type;
                 self.current_posts_page += 1;
                 let page = self.current_posts_page;
                 std::thread::spawn(move || {
-                    let community_posts = api::posts::list_posts(page, Some(name), None, None);
+                    let community_posts = api::posts::list_posts(page, Some(name), None, Some(sort_type));
                     if let Ok(community_posts) = community_posts {
                         sender.input(CommunityInput::DoneFetchPosts(community_posts));
                     }
@@ -237,6 +255,12 @@ impl SimpleComponent for CommunityPage {
             }
             CommunityInput::UpdateSubscriptionState(state) => {
                 self.info.subscribed = state;
+            }
+            CommunityInput::UpdateOrder(sort_order) => {
+                self.current_sort_type = sort_order;
+                self.current_posts_page = 0;
+                self.posts.guard().clear();
+                sender.input_sender().emit(CommunityInput::FetchPosts);
             }
             CommunityInput::None => {}
         }

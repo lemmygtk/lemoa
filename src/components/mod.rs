@@ -15,5 +15,5 @@ pub mod post_row;
 pub mod posts_page;
 pub mod private_message_row;
 pub mod profile_page;
-pub mod sort_dropown;
+pub mod sort_dropdown;
 pub mod voting_row;
