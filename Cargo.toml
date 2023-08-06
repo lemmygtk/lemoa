@@ -6,14 +6,14 @@ edition = "2021"
 [dependencies]
 relm4 = "0.6.0"
 relm4-components = { version = "0.6.0", features = ["web"] }
-reqwest = { version = "0.11.16", features = ["json", "blocking", "multipart"] }
-serde = { version = "1.0.160", features = ["derive"] }
-serde_json = "1.0.96"
-lemmy_api_common = "0.18.1"
-markdown = "0.3.0"
-html2pango = "0.5.0"
-rand = "0.8.5"
-mime_guess = "2.0.4"
-chrono = "0.4.26"
-timeago = "0.4.1"
-itertools = "0.11.0"
+reqwest = { version = "0.11", features = ["json", "blocking", "multipart"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+lemmy_api_common = "0.18"
+markdown = "0.3"
+html2pango = "0.5"
+rand = "0.8"
+mime_guess = "2.0"
+chrono = "0.4"
+timeago = "0.4"
+itertools = "0.11"
