@@ -184,7 +184,7 @@ impl SimpleComponent for CommunityPage {
                 self.current_posts_page += 1;
                 let page = self.current_posts_page;
                 std::thread::spawn(move || {
-                    let community_posts = api::posts::list_posts(page, Some(name), None);
+                    let community_posts = api::posts::list_posts(page, Some(name), None, None);
                     if let Ok(community_posts) = community_posts {
                         sender.input(CommunityInput::DoneFetchPosts(community_posts));
                     }

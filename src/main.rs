@@ -22,7 +22,7 @@ use lemmy_api_common::{
     community::GetCommunityResponse,
     lemmy_db_schema::{
         newtypes::{CommunityId, PersonId, PostId},
-        ListingType,
+        ListingType, SortType,
     },
     post::GetPostResponse,
 };
@@ -465,7 +465,7 @@ impl SimpleComponent for App {
             AppMsg::OpenPosts => self
                 .posts_page
                 .sender()
-                .emit(PostsPageInput::FetchPosts(ListingType::Local, true)),
+                .emit(PostsPageInput::FetchPosts(ListingType::Local, SortType::Hot, true)),
         }
     }
 }

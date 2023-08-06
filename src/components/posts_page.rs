@@ -1,21 +1,24 @@
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_schema::ListingType, lemmy_db_views::structs::PostView};
+use lemmy_api_common::{lemmy_db_schema::{ListingType, SortType}, lemmy_db_views::structs::PostView};
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
-use super::post_row::PostRow;
+use super::{post_row::PostRow, sort_dropown::{SortDropdown, SortDropdownOutput}};
 
 pub struct PostsPage {
+    sort_dropdown: Controller<SortDropdown>,
     posts: FactoryVecDeque<PostRow>,
+    posts_order: SortType,
     posts_type: ListingType,
     posts_page: i64,
 }
 
 #[derive(Debug)]
 pub enum PostsPageInput {
-    FetchPosts(ListingType, bool),
+    FetchPosts(ListingType, SortType, bool),
     DoneFetchPosts(Vec<PostView>),
+    UpdateOrder(SortType),
 }
 
 #[relm4::component(pub)]
@@ -40,20 +43,27 @@ impl SimpleComponent for PostsPage {
                         set_label: "All",
                         #[watch]
                         set_active: model.posts_type == ListingType::All,
-                        connect_clicked => PostsPageInput::FetchPosts(ListingType::All, true),
+                        connect_clicked => PostsPageInput::FetchPosts(ListingType::All, model.posts_order, true),
                     },
                     gtk::ToggleButton {
                         set_label: "Local",
                         #[watch]
                         set_active: model.posts_type ==ListingType::Local,
-                        connect_clicked => PostsPageInput::FetchPosts(ListingType::Local, true),
+                        connect_clicked => PostsPageInput::FetchPosts(ListingType::Local, model.posts_order, true),
                     },
                     gtk::ToggleButton {
                         set_label: "Subscribed",
                         #[watch]
                         set_active: model.posts_type == ListingType::Subscribed,
-                        connect_clicked => PostsPageInput::FetchPosts(ListingType::Subscribed, true),
-                    }
+                        connect_clicked => PostsPageInput::FetchPosts(ListingType::Subscribed, model.posts_order, true),
+                    },
+
+                    gtk::Box {
+                        set_hexpand: true,
+                    },
+
+                    #[local_ref]
+                    sort_dropdown -> gtk::DropDown {},
                 },
                 #[local_ref]
                 posts_box -> gtk::Box {
@@ -62,7 +72,7 @@ impl SimpleComponent for PostsPage {
                 },
                 gtk::Button {
                     set_label: "More",
-                    connect_clicked => PostsPageInput::FetchPosts(model.posts_type, false),
+                    connect_clicked => PostsPageInput::FetchPosts(model.posts_type, model.posts_order, false),
                     set_margin_all: 10,
                 }
             }
@@ -74,12 +84,20 @@ impl SimpleComponent for PostsPage {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let sort_dropdown = SortDropdown::builder().launch(()).forward(sender.input_sender(), |msg| {
+            match msg {
+                SortDropdownOutput::New(sort_order) => PostsPageInput::UpdateOrder(sort_order),
+            }
+        });
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let model = Self {
+            sort_dropdown,
             posts,
             posts_type: ListingType::Local,
+            posts_order: SortType::Hot,
             posts_page: 1,
         };
+        let sort_dropdown = model.sort_dropdown.widget();
         let posts_box = model.posts.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -87,8 +105,9 @@ impl SimpleComponent for PostsPage {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            PostsPageInput::FetchPosts(type_, remove_previous) => {
+            PostsPageInput::FetchPosts(type_, order, remove_previous) => {
                 self.posts_type = type_;
+                self.posts_order = order;
                 let page = if remove_previous {
                     1
                 } else {
@@ -102,7 +121,7 @@ impl SimpleComponent for PostsPage {
                 }
                 self.posts_page = page;
                 std::thread::spawn(move || {
-                    match api::posts::list_posts(page, None, Some(type_)) {
+                    match api::posts::list_posts(page, None, Some(type_), Some(order)) {
                         Ok(posts) => {
                             sender.input(PostsPageInput::DoneFetchPosts(posts));
                         }
@@ -122,6 +141,10 @@ impl SimpleComponent for PostsPage {
                 for post in posts {
                     self.posts.guard().push_back(post);
                 }
+            }
+            PostsPageInput::UpdateOrder(order) => {
+                self.posts_order = order;
+                sender.input_sender().emit(PostsPageInput::FetchPosts(self.posts_type, order, true));
             }
         }
     }
