@@ -1,14 +1,18 @@
-use crate::components::loading_indicator::LoadingIndicator;
+use crate::{components::loading_indicator::LoadingIndicator, util::get_web_image_msg};
 use gtk::prelude::*;
 use lemmy_api_common::site::GetSiteResponse;
 use relm4::prelude::*;
+use relm4_components::web_image::WebImage;
 
 use crate::api;
+use crate::util::markdown_to_pango_markup;
 
 pub struct SiteInfo {
     visible: bool,
     loading: bool,
     site_info: GetSiteResponse,
+    admin_list: String,
+    banner: Controller<WebImage>,
 }
 
 #[derive(Debug)]
@@ -35,17 +39,68 @@ impl SimpleComponent for SiteInfo {
                 gtk::Inhibit(false)
             },
 
-            gtk::Box {
+            gtk::ScrolledWindow {
+                set_size_request: (700, 400),
+
                 match model.loading {
                     true => gtk::Box {
                         #[template]
                         LoadingIndicator,
                     }
                     false => gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 5,
+                        set_margin_all: 15,
 
+                        gtk::Label {
+                            set_text: &format!("{} v{}", model.site_info.site_view.site.name, model.site_info.version),
+                            set_wrap: true,
+                        },
+
+                        #[local_ref]
+                        banner -> gtk::Box {
+                            #[watch]
+                            set_visible: model.site_info.site_view.site.banner.is_some(),
+                            set_height_request: 300,
+                        },
+
+                        gtk::Label {
+                            #[watch]
+                            set_label: &markdown_to_pango_markup(model.site_info.site_view.site.description.clone().unwrap_or("".to_string())),
+                            set_use_markup: true,
+                            #[watch]
+                            set_visible: model.site_info.site_view.site.description.is_some(),
+                            set_wrap: true,
+                        },
+
+                        gtk::Label {
+                            set_margin_top: 10,
+                            #[watch]
+                            set_label: &markdown_to_pango_markup(model.site_info.site_view.site.sidebar.clone().unwrap_or("".to_string())),
+                            set_use_markup: true,
+                            #[watch]
+                            set_visible: model.site_info.site_view.site.description.is_some(),
+                            set_wrap: true,
+                        },
+
+                        gtk::Label {
+                            set_margin_top: 10,
+                            #[watch]
+                            set_text: &format!("{} users, {} posts, {} communities, {} comments",
+                                model.site_info.site_view.counts.users, model.site_info.site_view.counts.posts,
+                                model.site_info.site_view.counts.communities, model.site_info.site_view.counts.comments),
+                            set_wrap: true,
+                        },
+
+                        gtk::Label {
+                            set_margin_top: 5,
+                            #[watch]
+                            set_text: &format!("Admins: {}", model.admin_list),
+                            set_wrap: true,
+                        }
                     }
                 }
-            },
+            }
         }
     }
 
@@ -54,11 +109,15 @@ impl SimpleComponent for SiteInfo {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let banner = WebImage::builder().launch("".to_string()).detach();
         let model = Self {
             visible: false,
             loading: true,
             site_info: api::site::default_site_info(),
+            admin_list: String::from(""),
+            banner,
         };
+        let banner = model.banner.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -79,7 +138,15 @@ impl SimpleComponent for SiteInfo {
                 });
             }
             SiteInfoInput::Update(site_info) => {
+                let banner_url = site_info.site_view.site.banner.clone();
+                self.admin_list = site_info
+                    .admins
+                    .iter()
+                    .map(|admin| admin.person.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(", ");
                 self.site_info = site_info;
+                self.banner.emit(get_web_image_msg(banner_url));
                 self.loading = false;
             }
             SiteInfoInput::Hide => {
