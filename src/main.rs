@@ -318,26 +318,33 @@ impl SimpleComponent for App {
         let widgets = view_output!();
 
         // create the header bar menu and its actions
-        let instance_sender = sender.clone();
-        let instance_action: RelmAction<ChangeInstanceAction> =
+        let instance_action: RelmAction<ChangeInstanceAction> = {
+            let sender = sender.clone();
             RelmAction::new_stateless(move |_| {
-                instance_sender.input(AppMsg::ChooseInstance);
-            });
-        let accounts_sender = sender.clone();
-        let accounts_action: RelmAction<AccountsAction> = RelmAction::new_stateless(move |_| {
-            accounts_sender.input(AppMsg::UpdateState(AppState::AccountsPage));
-        });
-        let profile_sender = sender.clone();
-        let profile_action: RelmAction<ProfileAction> = RelmAction::new_stateless(move |_| {
-            let person = settings::get_current_account();
-            if !person.name.is_empty() {
-                profile_sender.input(AppMsg::OpenPerson(PersonId(person.id)));
-            }
-        });
-        let sender = sender.clone();
-        let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
-            sender.input(AppMsg::UpdateState(AppState::Login));
-        });
+                sender.input(AppMsg::ChooseInstance);
+            })
+        };
+        let accounts_action: RelmAction<AccountsAction> = {
+            let sender = sender.clone();
+            RelmAction::new_stateless(move |_| {
+                sender.input(AppMsg::UpdateState(AppState::AccountsPage));
+            })
+        };
+        let profile_action: RelmAction<ProfileAction> = {
+            let sender = sender.clone();
+            RelmAction::new_stateless(move |_| {
+                let person = settings::get_current_account();
+                if !person.name.is_empty() {
+                    sender.input(AppMsg::OpenPerson(PersonId(person.id)));
+                }
+            })
+        };
+        let login_action: RelmAction<LoginAction> = {
+            let sender = sender.clone();
+            RelmAction::new_stateless(move |_| {
+                sender.input(AppMsg::UpdateState(AppState::Login));
+            })
+        };
         let site_info_action: RelmAction<SiteInfoAction> = {
             let sender = model.site_info.sender().clone();
             RelmAction::new_stateless(move |_| {
