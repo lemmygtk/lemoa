@@ -8,3 +8,7 @@ pub fn fetch_site() -> std::result::Result<GetSiteResponse, reqwest::Error> {
     };
     super::get("/site", &params)
 }
+
+pub fn default_site_info() -> GetSiteResponse {
+    serde_json::from_str(include_str!("../examples/site.json")).unwrap()
+}

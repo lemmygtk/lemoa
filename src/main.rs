@@ -12,11 +12,12 @@ use components::{
     community_page::{self, CommunityPage},
     inbox_page::{InboxInput, InboxPage},
     instances_page::{InstancesPage, InstancesPageInput},
+    loading_indicator::LoadingIndicator,
     post_page::{self, PostPage},
     posts_page::{PostsPage, PostsPageInput},
     profile_page::{ProfileInput, ProfilePage},
 };
-use dialogs::about::AboutDialog;
+use dialogs::{about::AboutDialog, site_info::{SiteInfo, SiteInfoInput}};
 use gtk::prelude::*;
 use lemmy_api_common::{
     community::GetCommunityResponse,
@@ -64,8 +65,9 @@ struct App {
     login_page: Controller<LoginPage>,
     accounts_page: Controller<AccountsPage>,
     saved_page: Controller<ProfilePage>,
-    logged_in: bool,
     about_dialog: Controller<AboutDialog>,
+    site_info: Controller<SiteInfo>,
+    logged_in: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -139,18 +141,8 @@ impl SimpleComponent for App {
                     posts_page -> gtk::ScrolledWindow {}
                 }
                 AppState::Loading => gtk::Box {
-                    set_hexpand: true,
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_spacing: 12,
-                    set_valign: gtk::Align::Center,
-                    set_halign: gtk::Align::Center,
-                    gtk::Spinner {
-                        set_spinning: true,
-                        set_height_request: 80,
-                    },
-                    gtk::Label {
-                        set_text: "Loading",
-                    },
+                    #[template]
+                    LoadingIndicator,
                 }
                 AppState::ChooseInstance => gtk::Box {
                     #[local_ref]
@@ -226,6 +218,7 @@ impl SimpleComponent for App {
             "Accounts" => AccountsAction,
             "Login" => LoginAction,
             "Profile" => ProfileAction,
+            "Site Info" => SiteInfoAction,
             "About" => AboutAction
         }
     }
@@ -278,11 +271,14 @@ impl SimpleComponent for App {
         let saved_page = ProfilePage::builder()
             .launch((default_person(), true))
             .forward(sender.input_sender(), |msg| msg);
+        let site_info = SiteInfo::builder()
+            .transient_for(root)
+            .launch(())
+            .forward(sender.input_sender(), |msg| msg);
 
         let model = App {
             state,
             back_queue: vec![],
-            logged_in,
             posts_page,
             instances_page,
             profile_page,
@@ -295,6 +291,8 @@ impl SimpleComponent for App {
             message: None,
             about_dialog,
             saved_page,
+            site_info,
+            logged_in,
         };
 
         // fetch posts if that's the initial page
@@ -333,9 +331,16 @@ impl SimpleComponent for App {
                 profile_sender.input(AppMsg::OpenPerson(PersonId(person.id)));
             }
         });
+        let sender = sender.clone();
         let login_action: RelmAction<LoginAction> = RelmAction::new_stateless(move |_| {
             sender.input(AppMsg::UpdateState(AppState::Login));
         });
+        let site_info_action: RelmAction<SiteInfoAction> = {
+            let sender = model.site_info.sender().clone();
+            RelmAction::new_stateless(move |_| {
+                sender.emit(SiteInfoInput::Fetch);
+            })
+        };
         let about_action = {
             let sender = model.about_dialog.sender().clone();
             RelmAction::<AboutAction>::new_stateless(move |_| {
@@ -348,6 +353,7 @@ impl SimpleComponent for App {
         group.add_action(accounts_action);
         group.add_action(profile_action);
         group.add_action(login_action);
+        group.add_action(site_info_action);
         group.add_action(about_action);
         group.register_for_widget(&widgets.main_window);
 
@@ -462,10 +468,11 @@ impl SimpleComponent for App {
             AppMsg::UpdateState(state) => {
                 self.state = state;
             }
-            AppMsg::OpenPosts => self
-                .posts_page
-                .sender()
-                .emit(PostsPageInput::FetchPosts(ListingType::Local, SortType::Hot, true)),
+            AppMsg::OpenPosts => self.posts_page.sender().emit(PostsPageInput::FetchPosts(
+                ListingType::Local,
+                SortType::Hot,
+                true,
+            )),
         }
     }
 }
@@ -475,6 +482,7 @@ relm4::new_stateless_action!(ChangeInstanceAction, WindowActionGroup, "instance"
 relm4::new_stateless_action!(AccountsAction, WindowActionGroup, "accounts");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
 relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
+relm4::new_stateless_action!(SiteInfoAction, WindowActionGroup, "site_info");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
 fn main() {

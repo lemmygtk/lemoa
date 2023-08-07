@@ -155,7 +155,6 @@ impl SimpleComponent for CommunityPage {
                     connect_clicked => CommunityInput::FetchPosts,
                 }
             }
-
         }
     }
 

@@ -20,7 +20,7 @@ pub fn follow_community(
     follow: bool,
 ) -> Result<CommunityResponse, reqwest::Error> {
     let params = FollowCommunity {
-        community_id: community_id,
+        community_id,
         follow,
         auth: settings::get_current_account().jwt.unwrap(),
     };

@@ -60,6 +60,11 @@ impl SimpleComponent for EditorDialog {
             set_visible: model.visible,
             set_modal: true,
 
+            connect_close_request[sender] => move |_| {
+                sender.input(DialogMsg::Hide);
+                gtk::Inhibit(false)
+            },
+
             #[wrap(Some)]
             set_child = &gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
@@ -145,11 +150,6 @@ impl SimpleComponent for EditorDialog {
                     }
                 }
             },
-
-            connect_close_request[sender] => move |_| {
-                sender.input(DialogMsg::Hide);
-                gtk::Inhibit(false)
-            }
         }
     }
 
