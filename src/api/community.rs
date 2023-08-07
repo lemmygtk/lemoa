@@ -1,5 +1,8 @@
 use lemmy_api_common::{
-    community::{CommunityResponse, FollowCommunity, GetCommunity, GetCommunityResponse, BlockCommunityResponse, BlockCommunity},
+    community::{
+        BlockCommunity, BlockCommunityResponse, CommunityResponse, FollowCommunity, GetCommunity,
+        GetCommunityResponse,
+    },
     lemmy_db_schema::newtypes::CommunityId,
 };
 

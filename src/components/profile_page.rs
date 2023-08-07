@@ -239,15 +239,13 @@ impl SimpleComponent for ProfilePage {
                         }
                     };
                 });
-            },
+            }
             ProfileInput::BlockUser => {
                 let person_id = self.info.person_view.person.id;
-                std::thread::spawn(move || {
-                    match api::user::block_user(person_id, true) {
-                        Ok(_resp) => {}
-                        Err(err) => {
-                            println!("{}", err);
-                        }
+                std::thread::spawn(move || match api::user::block_user(person_id, true) {
+                    Ok(_resp) => {}
+                    Err(err) => {
+                        println!("{}", err);
                     }
                 });
             }

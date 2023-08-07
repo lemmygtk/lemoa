@@ -1,5 +1,5 @@
-use relm4::prelude::*;
 use gtk::prelude::*;
+use relm4::prelude::*;
 
 #[relm4::widget_template(pub)]
 impl WidgetTemplate for LoadingIndicator {

@@ -1,8 +1,9 @@
 use lemmy_api_common::{
     lemmy_db_schema::{newtypes::PersonId, CommentSortType},
     person::{
-        GetPersonDetails, GetPersonDetailsResponse, GetPersonMentions, GetPersonMentionsResponse,
-        GetReplies, GetRepliesResponse, MarkAllAsRead, BlockPersonResponse, BlockPerson,
+        BlockPerson, BlockPersonResponse, GetPersonDetails, GetPersonDetailsResponse,
+        GetPersonMentions, GetPersonMentionsResponse, GetReplies, GetRepliesResponse,
+        MarkAllAsRead,
     },
 };
 

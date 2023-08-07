@@ -25,7 +25,8 @@ pub fn fetch_instances(query_filter: &str) -> std::result::Result<Vec<Instance>,
             .filter(|instance| {
                 instance.software == Some("lemmy".to_owned())
                     && instance.domain.clone().contains(&lowercase_query_filter)
-            }).cloned()
+            })
+            .cloned()
             .collect::<Vec<Instance>>()),
         None => Ok(vec![]),
     }

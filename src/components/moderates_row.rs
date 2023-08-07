@@ -106,9 +106,9 @@ impl FactoryComponent for ModeratesRow {
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
-            ModeratesRowMsg::OpenCommunity => sender.output(crate::AppMsg::OpenCommunity(
-                self.community.community.id,
-            )),
+            ModeratesRowMsg::OpenCommunity => {
+                sender.output(crate::AppMsg::OpenCommunity(self.community.community.id))
+            }
         }
     }
 }

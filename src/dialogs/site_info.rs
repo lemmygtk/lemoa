@@ -1,7 +1,7 @@
+use crate::components::loading_indicator::LoadingIndicator;
 use gtk::prelude::*;
 use lemmy_api_common::site::GetSiteResponse;
 use relm4::prelude::*;
-use crate::components::loading_indicator::LoadingIndicator;
 
 use crate::api;
 
@@ -54,7 +54,11 @@ impl SimpleComponent for SiteInfo {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = Self { visible: false, loading: true, site_info: api::site::default_site_info() };
+        let model = Self {
+            visible: false,
+            loading: true,
+            site_info: api::site::default_site_info(),
+        };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -64,13 +68,13 @@ impl SimpleComponent for SiteInfo {
             SiteInfoInput::Fetch => {
                 self.loading = true;
                 self.visible = true;
-                std::thread::spawn(move || {
-                    match api::site::fetch_site() {
-                        Ok(site_info) => sender.input(SiteInfoInput::Update(site_info)),
-                        Err(err) => {
-                            sender.output_sender().emit(crate::AppMsg::ShowMessage(err.to_string()));
-                            sender.input_sender().emit(SiteInfoInput::Hide);
-                        }
+                std::thread::spawn(move || match api::site::fetch_site() {
+                    Ok(site_info) => sender.input(SiteInfoInput::Update(site_info)),
+                    Err(err) => {
+                        sender
+                            .output_sender()
+                            .emit(crate::AppMsg::ShowMessage(err.to_string()));
+                        sender.input_sender().emit(SiteInfoInput::Hide);
                     }
                 });
             }

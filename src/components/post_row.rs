@@ -194,9 +194,7 @@ impl FactoryComponent for PostRow {
             PostRowMsg::OpenPerson => {
                 sender.output(crate::AppMsg::OpenPerson(self.post.creator.id))
             }
-            PostRowMsg::OpenPost => {
-                sender.output(crate::AppMsg::OpenPost(self.post.post.id))
-            }
+            PostRowMsg::OpenPost => sender.output(crate::AppMsg::OpenPost(self.post.post.id)),
             PostRowMsg::ToggleSaved => {
                 let post_id = self.post.post.id;
                 let new_state = !self.post.saved;

@@ -95,9 +95,9 @@ impl FactoryComponent for CommunityRow {
 
     fn update(&mut self, message: Self::Input, sender: FactorySender<Self>) {
         match message {
-            CommunityRowMsg::OpenCommunity => sender.output(crate::AppMsg::OpenCommunity(
-                self.community.community.id,
-            )),
+            CommunityRowMsg::OpenCommunity => {
+                sender.output(crate::AppMsg::OpenCommunity(self.community.community.id))
+            }
         }
     }
 }

@@ -4,7 +4,8 @@ use crate::{
 };
 use gtk::prelude::*;
 use lemmy_api_common::{
-    lemmy_db_schema::{SubscribedType, SortType}, lemmy_db_views::structs::PostView,
+    lemmy_db_schema::{SortType, SubscribedType},
+    lemmy_db_views::structs::PostView,
     lemmy_db_views_actor::structs::CommunityView,
 };
 use relm4::{factory::FactoryVecDeque, prelude::*};
@@ -12,7 +13,10 @@ use relm4_components::web_image::WebImage;
 
 use crate::{api, settings, util::get_web_image_msg};
 
-use super::{post_row::PostRow, sort_dropdown::{SortDropdown, SortDropdownOutput}};
+use super::{
+    post_row::PostRow,
+    sort_dropdown::{SortDropdown, SortDropdownOutput},
+};
 
 pub struct CommunityPage {
     info: CommunityView,
@@ -165,11 +169,12 @@ impl SimpleComponent for CommunityPage {
     ) -> relm4::ComponentParts<Self> {
         let avatar = WebImage::builder().launch("".to_string()).detach();
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
-        let sort_dropdown = SortDropdown::builder().launch(()).forward(sender.input_sender(), |msg| {
-            match msg {
-                SortDropdownOutput::New(sort_order) => CommunityInput::UpdateOrder(sort_order),
-            }
-        });
+        let sort_dropdown =
+            SortDropdown::builder()
+                .launch(())
+                .forward(sender.input_sender(), |msg| match msg {
+                    SortDropdownOutput::New(sort_order) => CommunityInput::UpdateOrder(sort_order),
+                });
 
         let dialog = EditorDialog::builder()
             .transient_for(root)
@@ -215,7 +220,8 @@ impl SimpleComponent for CommunityPage {
                 self.current_posts_page += 1;
                 let page = self.current_posts_page;
                 std::thread::spawn(move || {
-                    let community_posts = api::posts::list_posts(page, Some(name), None, Some(sort_type));
+                    let community_posts =
+                        api::posts::list_posts(page, Some(name), None, Some(sort_type));
                     if let Ok(community_posts) = community_posts {
                         sender.input(CommunityInput::DoneFetchPosts(community_posts));
                     }
@@ -250,14 +256,14 @@ impl SimpleComponent for CommunityPage {
             }
             CommunityInput::ToggleSubscription => {
                 let community_id = self.info.community.id;
-                let new_state = matches!(self.info.subscribed, SubscribedType::NotSubscribed); 
+                let new_state = matches!(self.info.subscribed, SubscribedType::NotSubscribed);
                 std::thread::spawn(move || {
                     match api::community::follow_community(community_id, new_state) {
                         Ok(community) => {
                             sender.input(CommunityInput::UpdateSubscriptionState(
-                            community.community_view.subscribed,
-                        ));
-                        },
+                                community.community_view.subscribed,
+                            ));
+                        }
                         Err(err) => {
                             println!("{}", err);
                         }

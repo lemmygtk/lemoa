@@ -106,17 +106,16 @@ impl SimpleComponent for VotingRowModel {
         match message {
             VotingRowInput::Vote(vote) => {
                 let mut score = self.stats.own_vote.unwrap_or(0) + vote;
-                if !(-1..=1).contains(&score) { score = 0 };
+                if !(-1..=1).contains(&score) {
+                    score = 0
+                };
                 if settings::get_current_account().jwt.is_none() {
                     return;
                 }
                 let stats = self.stats.clone();
                 std::thread::spawn(move || {
                     let info = if stats.post_id.is_some() {
-                        let response = api::post::like_post(
-                            PostId(stats.post_id.unwrap()),
-                            score,
-                        );
+                        let response = api::post::like_post(PostId(stats.post_id.unwrap()), score);
                         match response {
                             Ok(post) => Some(VotingStats::from_post(
                                 post.post_view.counts,
@@ -128,10 +127,8 @@ impl SimpleComponent for VotingRowModel {
                             }
                         }
                     } else {
-                        let response = api::comment::like_comment(
-                            CommentId(stats.comment_id.unwrap()),
-                            score,
-                        );
+                        let response =
+                            api::comment::like_comment(CommentId(stats.comment_id.unwrap()), score);
                         match response {
                             Ok(comment) => Some(VotingStats::from_comment(
                                 comment.comment_view.counts,

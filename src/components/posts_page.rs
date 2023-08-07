@@ -1,10 +1,16 @@
 use gtk::prelude::*;
-use lemmy_api_common::{lemmy_db_schema::{ListingType, SortType}, lemmy_db_views::structs::PostView};
+use lemmy_api_common::{
+    lemmy_db_schema::{ListingType, SortType},
+    lemmy_db_views::structs::PostView,
+};
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
-use super::{post_row::PostRow, sort_dropdown::{SortDropdown, SortDropdownOutput}};
+use super::{
+    post_row::PostRow,
+    sort_dropdown::{SortDropdown, SortDropdownOutput},
+};
 
 pub struct PostsPage {
     sort_dropdown: Controller<SortDropdown>,
@@ -86,11 +92,12 @@ impl SimpleComponent for PostsPage {
         root: &Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let sort_dropdown = SortDropdown::builder().launch(()).forward(sender.input_sender(), |msg| {
-            match msg {
-                SortDropdownOutput::New(sort_order) => PostsPageInput::UpdateOrder(sort_order),
-            }
-        });
+        let sort_dropdown =
+            SortDropdown::builder()
+                .launch(())
+                .forward(sender.input_sender(), |msg| match msg {
+                    SortDropdownOutput::New(sort_order) => PostsPageInput::UpdateOrder(sort_order),
+                });
         let posts = FactoryVecDeque::new(gtk::Box::default(), sender.output_sender());
         let model = Self {
             sort_dropdown,
@@ -146,7 +153,11 @@ impl SimpleComponent for PostsPage {
             }
             PostsPageInput::UpdateOrder(order) => {
                 self.posts_order = order;
-                sender.input_sender().emit(PostsPageInput::FetchPosts(self.posts_type, order, true));
+                sender.input_sender().emit(PostsPageInput::FetchPosts(
+                    self.posts_type,
+                    order,
+                    true,
+                ));
             }
         }
     }

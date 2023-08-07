@@ -17,7 +17,10 @@ use components::{
     posts_page::{PostsPage, PostsPageInput},
     profile_page::{ProfileInput, ProfilePage},
 };
-use dialogs::{about::AboutDialog, site_info::{SiteInfo, SiteInfoInput}};
+use dialogs::{
+    about::AboutDialog,
+    site_info::{SiteInfo, SiteInfoInput},
+};
 use gtk::prelude::*;
 use lemmy_api_common::{
     community::GetCommunityResponse,

@@ -160,9 +160,7 @@ impl FactoryComponent for MentionRow {
                 sender.output(crate::AppMsg::OpenPost(self.comment.post.id));
             }
             MentionRowMsg::OpenCommunity => {
-                sender.output(crate::AppMsg::OpenCommunity(
-                    self.comment.community.id,
-                ));
+                sender.output(crate::AppMsg::OpenCommunity(self.comment.community.id));
             }
         }
     }
