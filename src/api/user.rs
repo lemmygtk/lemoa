@@ -2,7 +2,7 @@ use lemmy_api_common::{
     lemmy_db_schema::{newtypes::PersonId, CommentSortType},
     person::{
         GetPersonDetails, GetPersonDetailsResponse, GetPersonMentions, GetPersonMentionsResponse,
-        GetReplies, GetRepliesResponse, MarkAllAsRead
+        GetReplies, GetRepliesResponse, MarkAllAsRead, BlockPersonResponse, BlockPerson,
     },
 };
 
@@ -22,6 +22,19 @@ pub fn get_user(
     };
 
     super::get("/user", &params)
+}
+
+pub fn block_user(
+    person_id: PersonId,
+    block: bool,
+) -> std::result::Result<BlockPersonResponse, reqwest::Error> {
+    let params = BlockPerson {
+        person_id,
+        block,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+
+    super::post("/user/block", &params)
 }
 
 pub fn default_person() -> GetPersonDetailsResponse {

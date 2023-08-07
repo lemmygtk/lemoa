@@ -31,6 +31,7 @@ pub struct ProfilePage {
 pub enum ProfileInput {
     FetchPerson(Option<PersonId>),
     UpdatePerson(GetPersonDetailsResponse, bool),
+    BlockUser,
     SendMessageRequest,
     SendMessage(String),
 }
@@ -77,6 +78,7 @@ impl SimpleComponent for ProfilePage {
                         set_orientation: gtk::Orientation::Horizontal,
                         set_margin_top: 10,
                         set_margin_bottom: 10,
+                        set_spacing: 10,
                         set_hexpand: false,
                         set_halign: gtk::Align::Center,
 
@@ -85,9 +87,14 @@ impl SimpleComponent for ProfilePage {
                             set_text: &format!("{} posts, {} comments", model.info.person_view.counts.post_count, model.info.person_view.counts.comment_count),
                         },
                         gtk::Button {
+                            set_label: "Block",
+                            #[watch]
+                            set_visible: settings::get_current_account().jwt.is_some() && settings::get_current_account().id != model.info.person_view.person.id.0,
+                            connect_clicked => ProfileInput::BlockUser,
+                        },
+                        gtk::Button {
                             set_label: "Send message",
                             connect_clicked => ProfileInput::SendMessageRequest,
-                            set_margin_start: 10,
                             set_visible: settings::get_current_account().jwt.is_some(),
                         }
                     },
@@ -231,6 +238,17 @@ impl SimpleComponent for ProfilePage {
                                 .emit(crate::AppMsg::ShowMessage(err.to_string()));
                         }
                     };
+                });
+            },
+            ProfileInput::BlockUser => {
+                let person_id = self.info.person_view.person.id;
+                std::thread::spawn(move || {
+                    match api::user::block_user(person_id, true) {
+                        Ok(_resp) => {}
+                        Err(err) => {
+                            println!("{}", err);
+                        }
+                    }
                 });
             }
         }
