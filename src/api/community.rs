@@ -1,5 +1,5 @@
 use lemmy_api_common::{
-    community::{CommunityResponse, FollowCommunity, GetCommunity, GetCommunityResponse},
+    community::{CommunityResponse, FollowCommunity, GetCommunity, GetCommunityResponse, BlockCommunityResponse, BlockCommunity},
     lemmy_db_schema::newtypes::CommunityId,
 };
 
@@ -16,11 +16,11 @@ pub fn get_community(id: CommunityId) -> std::result::Result<GetCommunityRespons
 }
 
 pub fn follow_community(
-    community_id: i32,
+    community_id: CommunityId,
     follow: bool,
 ) -> Result<CommunityResponse, reqwest::Error> {
     let params = FollowCommunity {
-        community_id: CommunityId(community_id),
+        community_id: community_id,
         follow,
         auth: settings::get_current_account().jwt.unwrap(),
     };
@@ -29,4 +29,17 @@ pub fn follow_community(
 
 pub fn default_community() -> GetCommunityResponse {
     serde_json::from_str(include_str!("../examples/community.json")).unwrap()
+}
+
+pub fn block_community(
+    community_id: CommunityId,
+    block: bool,
+) -> std::result::Result<BlockCommunityResponse, reqwest::Error> {
+    let params = BlockCommunity {
+        community_id,
+        block,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+
+    super::post("/community/block", &params)
 }

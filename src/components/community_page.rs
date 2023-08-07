@@ -36,6 +36,8 @@ pub enum CommunityInput {
     ToggleSubscription,
     UpdateSubscriptionState(SubscribedType),
     UpdateOrder(SortType),
+    ToggleBlocked,
+    UpdateBlocked(bool),
     None,
 }
 
@@ -91,6 +93,7 @@ impl SimpleComponent for CommunityPage {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_halign: gtk::Align::Center,
                     set_margin_top: 10,
+                    set_spacing: 10,
                     #[watch]
                     set_visible: settings::get_current_account().jwt.is_some(),
 
@@ -114,8 +117,19 @@ impl SimpleComponent for CommunityPage {
                         }
                     },
                     gtk::Button {
+                        set_label: "Block",
+                        #[watch]
+                        set_visible: !model.info.blocked,
+                        connect_clicked => CommunityInput::ToggleBlocked,
+                    },
+                    gtk::Button {
+                        set_label: "Unblock",
+                        #[watch]
+                        set_visible: model.info.blocked,
+                        connect_clicked => CommunityInput::ToggleBlocked,
+                    },
+                    gtk::Button {
                         set_label: "Create post",
-                        set_margin_start: 10,
                         connect_clicked => CommunityInput::OpenCreatePostDialog,
                     }
                 },
@@ -236,20 +250,18 @@ impl SimpleComponent for CommunityPage {
                 });
             }
             CommunityInput::ToggleSubscription => {
-                let community_id = self.info.community.id.0;
+                let community_id = self.info.community.id;
                 let new_state = matches!(self.info.subscribed, SubscribedType::NotSubscribed); 
                 std::thread::spawn(move || {
-                    let message = match api::community::follow_community(community_id, new_state) {
-                        Ok(community) => Some(CommunityInput::UpdateSubscriptionState(
+                    match api::community::follow_community(community_id, new_state) {
+                        Ok(community) => {
+                            sender.input(CommunityInput::UpdateSubscriptionState(
                             community.community_view.subscribed,
-                        )),
+                        ));
+                        },
                         Err(err) => {
                             println!("{}", err);
-                            None
                         }
-                    };
-                    if let Some(message) = message {
-                        sender.input(message)
                     };
                 });
             }
@@ -262,6 +274,21 @@ impl SimpleComponent for CommunityPage {
                 self.posts.guard().clear();
                 sender.input_sender().emit(CommunityInput::FetchPosts);
             }
+            CommunityInput::ToggleBlocked => {
+                let community_id = self.info.community.id;
+                let blocked = self.info.blocked;
+                std::thread::spawn(move || {
+                    match api::community::block_community(community_id, !blocked) {
+                        Ok(resp) => {
+                            sender.input(CommunityInput::UpdateBlocked(resp.blocked));
+                        }
+                        Err(err) => {
+                            println!("{}", err);
+                        }
+                    }
+                });
+            }
+            CommunityInput::UpdateBlocked(blocked) => self.info.blocked = blocked,
             CommunityInput::None => {}
         }
     }
