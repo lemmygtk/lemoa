@@ -11,6 +11,7 @@ use crate::dialogs::editor::EditorType;
 use crate::settings;
 use crate::util::get_web_image_msg;
 use crate::util::markdown_to_pango_markup;
+use crate::util::format_elapsed_time;
 
 use super::comment_row::CommentRow;
 use super::moderates_row::ModeratesRow;
@@ -74,6 +75,12 @@ impl SimpleComponent for ProfilePage {
                         set_use_markup: true,
                     },
 
+                    gtk::Label {
+                        set_margin_top: 5,
+                        #[watch]
+                        set_text: &format!("Joined {}", format_elapsed_time(model.info.person_view.person.published)),
+                    },
+
                     gtk::Box {
                         set_orientation: gtk::Orientation::Horizontal,
                         set_margin_top: 10,
@@ -95,6 +102,7 @@ impl SimpleComponent for ProfilePage {
                         gtk::Button {
                             set_label: "Send message",
                             connect_clicked => ProfileInput::SendMessageRequest,
+                            #[watch]
                             set_visible: settings::get_current_account().jwt.is_some(),
                         }
                     },
