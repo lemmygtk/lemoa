@@ -77,20 +77,9 @@ impl SimpleComponent for CommunityPage {
                     set_use_markup: true,
                     set_wrap: true,
                 },
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_halign: gtk::Align::Center,
-
-                    gtk::Label {
-                        #[watch]
-                        set_text: &format!("{} subscribers", model.info.counts.subscribers),
-                        set_margin_end: 10,
-                    },
-                    gtk::Label {
-                        #[watch]
-                        set_text: &format!("{} posts, {} comments", model.info.counts.posts, model.info.counts.comments),
-                        set_margin_start: 10,
-                    },
+                gtk::Label {
+                    #[watch]
+                    set_text: &format!("{} subscribers, {} posts, {} comments", model.info.counts.subscribers, model.info.counts.posts, model.info.counts.comments),
                 },
 
                 gtk::Box {
