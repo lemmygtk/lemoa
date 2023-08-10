@@ -69,6 +69,7 @@ impl SimpleComponent for CommunitiesPage {
                             set_hexpand: true,
                             set_tooltip_text: Some("Search"),
                             set_buffer: &model.community_search_buffer,
+                            connect_activate => CommunitiesPageInput::FetchCommunities(model.communities_type, true),
                         },
                         gtk::Button {
                             set_label: "Search",
