@@ -54,6 +54,7 @@ impl SimpleComponent for InstancesPage {
                                 set_hexpand: true,
                                 set_tooltip_text: Some("Search"),
                                 set_buffer: &model.instances_search_buffer,
+                                connect_activate => InstancesPageInput::FetchInstances,
                             },
                             gtk::Button {
                                 set_label: "Filter",
