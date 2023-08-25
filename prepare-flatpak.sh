@@ -13,6 +13,7 @@ cd ..
 # archive the source code and vendored crates to a tar.xz
 tar cfJ "lemoa-$VERSION.tar.xz" lemoa
 sha256sum "lemoa-$VERSION.tar.xz" | cut -d ' ' -f 1
+mv "lemoa-$VERSION.tar.xz" ~/Downloads/
 
 # cleanup
 cd lemoa
