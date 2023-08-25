@@ -26,7 +26,28 @@
   <url type="bugtracker">https://github.com/lemmygtk/lemoa/issues</url>
   <content_rating type="oars-1.0" />
   <releases>
-  <release version="0.3.0" date="2023-07-13">
+    <release version="0.4.0" date="2023-08-25">
+      <description>
+        <ul>
+          <li>Show preview of post thumbnail by @Bnyro</li>
+          <li>feat(posts): option to set the sort order by @Bnyro</li>
+          <li>feat(community): option to set the sort order of posts by @Bnyro</li>
+          <li>chore: update dependencies to latest versions by @Bnyro</li>
+          <li>feat: support for (un)blocking communities by @Bnyro</li>
+          <li>feat: support for blocking other users by @Bnyro</li>
+          <li>feat: add a site info dialog by @Bnyro</li>
+          <li>refactor: simplify the creation of menu actions by @Bnyro</li>
+          <li>feat: add important site info to its dialog by @Bnyro</li>
+          <li>feat(profile): show when the user has joined lemmy by @Bnyro</li>
+          <li>fix(community page): simplify sub, posts and comment count by @Bnyro</li>
+          <li>feat: search on enter in instance list () by @thebigG</li>
+          <li>feat: search community on enter by @Bnyro</li>
+          <li>Minor UI improvements at the instances page by @Bnyro</li>
+          <li>readme: add installation instructions for void linux by @Bnyro</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.3.0" date="2023-07-13">
       <description>
         <ul>
           <li>Support for replying to comments</li>
