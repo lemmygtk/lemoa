@@ -54,6 +54,11 @@ impl SimpleComponent for CommunityPage {
     view! {
         gtk::ScrolledWindow {
             set_vexpand: false,
+            connect_edge_reached[sender] => move |_,pos| {
+                if pos == gtk::PositionType::Bottom {
+                    sender.input(CommunityInput::FetchPosts)
+                }
+            },
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,

@@ -36,6 +36,14 @@ impl SimpleComponent for PostsPage {
     view! {
         gtk::ScrolledWindow {
             set_hexpand: true,
+            connect_edge_reached[sender] => move |_,pos| {
+                if pos == gtk::PositionType::Bottom {
+                    sender.input( 
+                        PostsPageInput::FetchPosts(
+                            model.posts_type, 
+                            model.posts_order, false))
+                }
+            },
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
