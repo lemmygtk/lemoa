@@ -54,9 +54,9 @@ impl SimpleComponent for CommunityPage {
     view! {
         gtk::ScrolledWindow {
             set_vexpand: false,
-            connect_edge_reached[sender] => move |_,pos| {
-                if pos == gtk::PositionType::Bottom {
-                    sender.input(CommunityInput::FetchPosts)
+            connect_edge_reached[sender] => move |_, pos| {
+                if pos == gtk::PositionType::Bottom && settings::get_prefs().infinite_scroll {
+                    sender.input(CommunityInput::FetchPosts);
                 }
             },
 

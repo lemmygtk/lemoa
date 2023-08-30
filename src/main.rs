@@ -19,6 +19,7 @@ use components::{
 };
 use dialogs::{
     about::AboutDialog,
+    settings::Settings,
     site_info::{SiteInfo, SiteInfoInput},
 };
 use gtk::prelude::*;
@@ -68,6 +69,7 @@ struct App {
     login_page: Controller<LoginPage>,
     accounts_page: Controller<AccountsPage>,
     saved_page: Controller<ProfilePage>,
+    settings_dialog: Controller<Settings>,
     about_dialog: Controller<AboutDialog>,
     site_info: Controller<SiteInfo>,
     logged_in: bool,
@@ -222,6 +224,7 @@ impl SimpleComponent for App {
             "Login" => LoginAction,
             "Profile" => ProfileAction,
             "Site Info" => SiteInfoAction,
+            "Settings" => SettingsAction,
             "About" => AboutAction
         }
     }
@@ -262,6 +265,7 @@ impl SimpleComponent for App {
         let communities_page = CommunitiesPage::builder()
             .launch(())
             .forward(sender.input_sender(), |msg| msg);
+        let settings_dialog = dialogs::settings::Settings::builder().launch(()).detach();
         let about_dialog = AboutDialog::builder()
             .launch(root.toplevel_window().unwrap())
             .detach();
@@ -293,6 +297,7 @@ impl SimpleComponent for App {
             accounts_page,
             message: None,
             about_dialog,
+            settings_dialog,
             saved_page,
             site_info,
             logged_in,
@@ -340,7 +345,6 @@ impl SimpleComponent for App {
             })
         };
         let login_action: RelmAction<LoginAction> = {
-            let sender = sender.clone();
             RelmAction::new_stateless(move |_| {
                 sender.input(AppMsg::UpdateState(AppState::Login));
             })
@@ -349,6 +353,14 @@ impl SimpleComponent for App {
             let sender = model.site_info.sender().clone();
             RelmAction::new_stateless(move |_| {
                 sender.emit(SiteInfoInput::Fetch);
+            })
+        };
+        let settings_action = {
+            let sender = model.settings_dialog.sender().clone();
+            RelmAction::<SettingsAction>::new_stateless(move |_| {
+                sender
+                    .send(dialogs::settings::SettingsInput::Show)
+                    .unwrap_or_default();
             })
         };
         let about_action = {
@@ -364,6 +376,7 @@ impl SimpleComponent for App {
         group.add_action(profile_action);
         group.add_action(login_action);
         group.add_action(site_info_action);
+        group.add_action(settings_action);
         group.add_action(about_action);
         group.register_for_widget(&widgets.main_window);
 
@@ -493,6 +506,7 @@ relm4::new_stateless_action!(AccountsAction, WindowActionGroup, "accounts");
 relm4::new_stateless_action!(LoginAction, WindowActionGroup, "login");
 relm4::new_stateless_action!(ProfileAction, WindowActionGroup, "profile");
 relm4::new_stateless_action!(SiteInfoAction, WindowActionGroup, "site_info");
+relm4::new_stateless_action!(SettingsAction, WindowActionGroup, "settings");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
 fn main() {

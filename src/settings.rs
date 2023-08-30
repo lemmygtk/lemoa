@@ -12,10 +12,21 @@ pub struct Account {
     pub name: String,
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize)]
 pub struct Preferences {
     pub accounts: Vec<Account>,
     pub current_account_index: u32,
+    pub infinite_scroll: bool,
+}
+
+impl Default for Preferences {
+    fn default() -> Self {
+        Self {
+            accounts: vec![],
+            current_account_index: 0,
+            infinite_scroll: true,
+        }
+    }
 }
 
 pub fn data_path() -> PathBuf {

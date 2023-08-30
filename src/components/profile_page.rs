@@ -9,9 +9,9 @@ use crate::dialogs::editor::EditorDialog;
 use crate::dialogs::editor::EditorOutput;
 use crate::dialogs::editor::EditorType;
 use crate::settings;
+use crate::util::format_elapsed_time;
 use crate::util::get_web_image_msg;
 use crate::util::markdown_to_pango_markup;
-use crate::util::format_elapsed_time;
 
 use super::comment_row::CommentRow;
 use super::moderates_row::ModeratesRow;
