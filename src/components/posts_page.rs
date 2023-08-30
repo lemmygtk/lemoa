@@ -7,6 +7,8 @@ use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::api;
 
+use crate::settings::get_prefs;
+
 use super::{
     post_row::PostRow,
     sort_dropdown::{SortDropdown, SortDropdownOutput},
@@ -37,7 +39,8 @@ impl SimpleComponent for PostsPage {
         gtk::ScrolledWindow {
             set_hexpand: true,
             connect_edge_reached[sender] => move |_,pos| {
-                if pos == gtk::PositionType::Bottom {
+                if pos == gtk::PositionType::Bottom &&
+                    get_prefs().infinite_scroll {
                     sender.input( 
                         PostsPageInput::FetchPosts(
                             model.posts_type, 
