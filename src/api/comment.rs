@@ -1,6 +1,7 @@
 use lemmy_api_common::{
     comment::{
-        CommentResponse, CreateComment, CreateCommentLike, DeleteComment, EditComment, SaveComment,
+        CommentReportResponse, CommentResponse, CreateComment, CreateCommentLike,
+        CreateCommentReport, DeleteComment, EditComment, SaveComment,
     },
     lemmy_db_schema::newtypes::{CommentId, PostId},
 };
@@ -61,4 +62,16 @@ pub fn save_comment(comment_id: CommentId, save: bool) -> Result<CommentResponse
         save,
     };
     super::put("/comment/save", &params)
+}
+
+pub fn report_comment(
+    comment_id: CommentId,
+    reason: String,
+) -> Result<CommentReportResponse, reqwest::Error> {
+    let params = CreateCommentReport {
+        comment_id,
+        reason,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+    super::post("/comment/report", &params)
 }

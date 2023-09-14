@@ -9,6 +9,8 @@ use crate::dialogs::editor::EditorData;
 use crate::dialogs::editor::EditorDialog;
 use crate::dialogs::editor::EditorOutput;
 use crate::dialogs::editor::EditorType;
+use crate::dialogs::report_dialog::ReportDialog;
+use crate::dialogs::report_dialog::ReportDialogInput;
 use crate::settings;
 use crate::util;
 use crate::util::get_web_image_url;
@@ -22,6 +24,7 @@ pub struct CommentRow {
     avatar: Controller<WebImage>,
     voting_row: Controller<VotingRowModel>,
     comment_editor_dialog: Controller<EditorDialog>,
+    report_comment_dialog: Controller<ReportDialog>,
 }
 
 #[derive(Debug)]
@@ -33,6 +36,7 @@ pub enum CommentRowMsg {
     EditCommentRequest(EditorData),
     CreateCommentRequest(EditorData),
     UpdateComment(CommentView),
+    ShowReportDialog,
 }
 
 #[relm4::factory(pub)]
@@ -108,6 +112,12 @@ impl FactoryComponent for CommentRow {
                 },
 
                 gtk::Button {
+                    set_icon_name: "action-unavailable",
+                    connect_clicked => CommentRowMsg::ShowReportDialog,
+                    set_visible: settings::get_current_account().jwt.is_some(),
+                },
+
+                gtk::Button {
                     set_icon_name: "document-edit",
                     connect_clicked => CommentRowMsg::OpenEditor(false),
                     set_visible: self.comment.creator.id.0 == settings::get_current_account().id,
@@ -117,7 +127,7 @@ impl FactoryComponent for CommentRow {
                     set_icon_name: "edit-delete",
                     connect_clicked => CommentRowMsg::DeleteComment,
                     set_visible: self.comment.creator.id.0 == settings::get_current_account().id,
-                }
+                },
             },
         }
     }
@@ -143,12 +153,16 @@ impl FactoryComponent for CommentRow {
                 EditorOutput::CreateRequest(data, _) => CommentRowMsg::CreateCommentRequest(data),
             },
         );
+        let report_comment_dialog = ReportDialog::builder()
+            .launch((None, Some(value.comment.id)))
+            .detach();
 
         Self {
             comment: value,
             avatar,
             voting_row,
             comment_editor_dialog,
+            report_comment_dialog,
         }
     }
 
@@ -236,6 +250,10 @@ impl FactoryComponent for CommentRow {
                     }
                 });
             }
+            CommentRowMsg::ShowReportDialog => self
+                .report_comment_dialog
+                .sender()
+                .emit(ReportDialogInput::Show),
         }
     }
 }
