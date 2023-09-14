@@ -27,6 +27,7 @@ pub struct PostPage {
     #[allow(dead_code)]
     create_comment_dialog: Controller<EditorDialog>,
     voting_row: Controller<VotingRowModel>,
+    thumbnail_height: i32,
 }
 
 #[derive(Debug)]
@@ -65,7 +66,8 @@ impl SimpleComponent for PostPage {
 
                 #[local_ref]
                 image -> gtk::Box {
-                    set_height_request: 400,
+                    #[watch]
+                    set_height_request: model.thumbnail_height,
                     set_margin_bottom: 20,
                     set_margin_top: 20,
                     #[watch]
@@ -218,6 +220,7 @@ impl SimpleComponent for PostPage {
         let voting_row = VotingRowModel::builder()
             .launch(VotingStats::default())
             .detach();
+
         let model = PostPage {
             info: init,
             image,
@@ -226,6 +229,7 @@ impl SimpleComponent for PostPage {
             community_avatar,
             create_comment_dialog: dialog,
             voting_row,
+            thumbnail_height: 400,
         };
 
         let image = model.image.widget();
@@ -241,6 +245,13 @@ impl SimpleComponent for PostPage {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             PostPageInput::UpdatePost(post) => {
+                match relm4::main_application().active_window() {
+                    Some(window) => {
+                        self.thumbnail_height = window.allocated_width() / 2;
+                    }
+                    None => unreachable!(),
+                }
+
                 self.info = post.clone();
 
                 self.image

@@ -15,6 +15,7 @@ pub struct PostRow {
     community_image: Controller<WebImage>,
     thumbnail: Controller<WebImage>,
     voting_row: Controller<VotingRowModel>,
+    image_size: i32,
 }
 
 #[derive(Debug)]
@@ -49,7 +50,7 @@ impl FactoryComponent for PostRow {
                 #[local_ref]
                 thumbnail -> gtk::Box {
                     set_visible: self.post.post.thumbnail_url.is_some(),
-                    set_size_request: (180, 180),
+                    set_size_request: (self.image_size, self.image_size),
                     set_margin_start: 10,
                     set_margin_end: 10,
                     set_hexpand: false,
@@ -168,6 +169,7 @@ impl FactoryComponent for PostRow {
             community_image,
             voting_row,
             thumbnail,
+            image_size: 1500,
         }
     }
 
@@ -178,6 +180,13 @@ impl FactoryComponent for PostRow {
         _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
+        match root.widget_ref().toplevel_window() {
+            Some(window) => {
+                self.image_size = window.allocated_width() / 8;
+            }
+            None => unreachable!(),
+        }
+        println!("size {}", self.image_size);
         let thumbnail = self.thumbnail.widget();
         let author_image = self.author_image.widget();
         let community_image = self.community_image.widget();
