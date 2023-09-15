@@ -186,7 +186,6 @@ impl FactoryComponent for PostRow {
             }
             None => unreachable!(),
         }
-        println!("size {}", self.image_size);
         let thumbnail = self.thumbnail.widget();
         let author_image = self.author_image.widget();
         let community_image = self.community_image.widget();

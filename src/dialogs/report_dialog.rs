@@ -49,6 +49,8 @@ impl SimpleComponent for ReportDialog {
                     set_margin_top: 10,
                     set_margin_bottom: 10,
                     set_label: "Report",
+                    set_hexpand: false,
+                    set_halign: gtk::Align::End,
                     connect_clicked[report_message] => move |_| {
                         let reason = report_message.text().to_string();
                         ReportDialogInput::Report(reason);
