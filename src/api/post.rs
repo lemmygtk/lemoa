@@ -9,7 +9,7 @@ use lemmy_api_common::{
     lemmy_db_views::structs::CommentView,
     post::{
         CreatePost, CreatePostLike, CreatePostReport, DeletePost, EditPost, GetPost,
-        GetPostResponse, PostReportResponse, PostResponse, SavePost,
+        GetPostResponse, MarkPostAsRead, PostReportResponse, PostResponse, SavePost,
     },
 };
 use std::result::Result;
@@ -128,4 +128,13 @@ pub fn report_post(post_id: PostId, reason: String) -> Result<PostReportResponse
         auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/post/report", &params)
+}
+
+pub fn mark_post_as_read(post_id: PostId, read: bool) -> Result<PostResponse, reqwest::Error> {
+    let params = MarkPostAsRead {
+        post_id,
+        read,
+        auth: settings::get_current_account().jwt.unwrap(),
+    };
+    super::post("/post/mark_as_read", &params)
 }

@@ -24,8 +24,10 @@ pub enum PostRowMsg {
     OpenCommunity,
     OpenPerson,
     ToggleSaved,
+    ToggleRead,
     DeletePost,
     UpdateSaved(bool),
+    UpdateRead(bool),
 }
 
 #[relm4::factory(pub)]
@@ -128,6 +130,14 @@ impl FactoryComponent for PostRow {
                             #[watch]
                             set_active: self.post.saved,
                         },
+                        gtk::ToggleButton {
+                            set_icon_name: "mail-mark-read",
+                            set_margin_start: 10,
+                            connect_clicked => PostRowMsg::ToggleRead,
+                            set_visible: settings::get_current_account().jwt.is_some(),
+                            #[watch]
+                            set_active: self.post.read,
+                        },
                         gtk::Button {
                             set_icon_name: "edit-delete",
                             connect_clicked => PostRowMsg::DeletePost,
@@ -207,12 +217,25 @@ impl FactoryComponent for PostRow {
                 let post_id = self.post.post.id;
                 let new_state = !self.post.saved;
                 std::thread::spawn(move || match api::post::save_post(post_id, new_state) {
-                    Ok(post) => sender.input(PostRowMsg::UpdateSaved(post.post_view.saved)),
+                    Ok(_) => sender.input(PostRowMsg::UpdateSaved(new_state)),
                     Err(err) => println!("{}", err),
+                });
+            }
+            PostRowMsg::ToggleRead => {
+                let post_id = self.post.post.id;
+                let new_state = !self.post.read;
+                std::thread::spawn(move || {
+                    match api::post::mark_post_as_read(post_id, new_state) {
+                        Ok(_) => sender.input(PostRowMsg::UpdateRead(new_state)),
+                        Err(err) => println!("{}", err),
+                    }
                 });
             }
             PostRowMsg::UpdateSaved(is_saved) => {
                 self.post.saved = is_saved;
+            }
+            PostRowMsg::UpdateRead(is_read) => {
+                self.post.read = is_read;
             }
             PostRowMsg::DeletePost => {
                 let post_id = self.post.post.id;
