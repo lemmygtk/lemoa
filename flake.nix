@@ -12,7 +12,7 @@
     packages = rec {
         lemoa = pkgs.rustPlatform.buildRustPackage {
             pname = "lemoa";
-            version = "0.4.0";
+            version = "0.5.0";
             src = ./.;
             buildInputs = with pkgs; [
                 openssl

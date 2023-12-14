@@ -1,7 +1,7 @@
 project(
   'lemoa',
   'rust',
-  version: '0.4.0',
+  version: '0.5.0',
   meson_version: '>= 0.59',
   license: 'GPL-3.0',
 )
@@ -16,6 +16,7 @@ version = meson.project_version()
 dependency('glib-2.0', version: '>= 2.70')
 dependency('gio-2.0', version: '>= 2.70')
 dependency('gtk4', version: '>= 4.10.0')
+dependency('libadwaita-1', version: '>= 1.2.0')
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)
 glib_compile_schemas = find_program('glib-compile-schemas', required: true)

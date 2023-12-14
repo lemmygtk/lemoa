@@ -26,6 +26,19 @@
   <url type="bugtracker">https://github.com/lemmygtk/lemoa/issues</url>
   <content_rating type="oars-1.0" />
   <releases>
+    <release version="0.5.0" date="2023-12-14">
+      <description>
+        <ul>
+          <li>feat: add infinite scroll behaviour by @Busyvar</li>
+          <li>feat: implement setting dialog & make infinite scroll an option on it by @Busyvar</li>
+          <li>feat: enable libadwaita by default by @Bnyro</li>
+          <li>feat: dynamic image measures based on screen size by @Bnyro</li>
+          <li>feat: support for reporting comments under posts by @Bnyro</li>
+          <li>feat: support for reporting posts by @Bnyro</li>
+          <li>feat: indicate and mark posts as read/unread by @Bnyro</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.0" date="2023-08-25">
       <description>
         <ul>
