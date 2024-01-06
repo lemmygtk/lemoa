@@ -27,7 +27,7 @@
   <content_rating type="oars-1.0" />
   <releases>
     <release version="0.5.1" date="2024-01-06">
-      <descrition>
+      <description>
         <ul>
           <li>feat: compatibility with Lemmy v0.19 by @Bnyro</li>
         </ul>
@@ -37,7 +37,7 @@
       <description>
         <ul>
           <li>feat: add infinite scroll behaviour by @Busyvar</li>
-          <li>feat: implement setting dialog & make infinite scroll an option on it by @Busyvar</li>
+          <li>feat: implement setting dialog and make infinite scroll an option on it by @Busyvar</li>
           <li>feat: enable libadwaita by default by @Bnyro</li>
           <li>feat: dynamic image measures based on screen size by @Bnyro</li>
           <li>feat: support for reporting comments under posts by @Bnyro</li>
