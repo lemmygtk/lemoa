@@ -21,9 +21,8 @@ pub fn markdown_to_pango_markup(text: String) -> String {
     html2pango::markup_html(&markdown::to_html(&text)).unwrap_or(text)
 }
 
-pub fn format_elapsed_time(time: chrono::NaiveDateTime) -> String {
+pub fn format_elapsed_time(time: chrono::DateTime<chrono::Utc>) -> String {
     let formatter = timeago::Formatter::new();
     let current_time = chrono::Utc::now();
-    let published = time.and_utc();
-    formatter.convert_chrono(published, current_time)
+    formatter.convert_chrono(time, current_time)
 }

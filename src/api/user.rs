@@ -3,11 +3,8 @@ use lemmy_api_common::{
     person::{
         BlockPerson, BlockPersonResponse, GetPersonDetails, GetPersonDetailsResponse,
         GetPersonMentions, GetPersonMentionsResponse, GetReplies, GetRepliesResponse,
-        MarkAllAsRead,
     },
 };
-
-use crate::settings;
 
 pub fn get_user(
     id: PersonId,
@@ -17,7 +14,6 @@ pub fn get_user(
     let params = GetPersonDetails {
         page: Some(page),
         person_id: Some(id),
-        auth: settings::get_current_account().jwt,
         saved_only: Some(saved_only),
         ..Default::default()
     };
@@ -29,11 +25,7 @@ pub fn block_user(
     person_id: PersonId,
     block: bool,
 ) -> std::result::Result<BlockPersonResponse, reqwest::Error> {
-    let params = BlockPerson {
-        person_id,
-        block,
-        auth: settings::get_current_account().jwt.unwrap(),
-    };
+    let params = BlockPerson { person_id, block };
 
     super::post("/user/block", &params)
 }
@@ -47,7 +39,6 @@ pub fn get_mentions(
     unread_only: bool,
 ) -> std::result::Result<GetPersonMentionsResponse, reqwest::Error> {
     let params = GetPersonMentions {
-        auth: settings::get_current_account().jwt.unwrap(),
         unread_only: Some(unread_only),
         page: Some(page),
         sort: Some(CommentSortType::New),
@@ -61,7 +52,6 @@ pub fn get_replies(
     unread_only: bool,
 ) -> std::result::Result<GetRepliesResponse, reqwest::Error> {
     let params = GetReplies {
-        auth: settings::get_current_account().jwt.unwrap(),
         page: Some(page),
         unread_only: Some(unread_only),
         sort: Some(CommentSortType::New),
@@ -71,8 +61,5 @@ pub fn get_replies(
 }
 
 pub fn mark_all_as_read() -> std::result::Result<GetRepliesResponse, reqwest::Error> {
-    let params = MarkAllAsRead {
-        auth: settings::get_current_account().jwt.unwrap(),
-    };
-    super::post("/user/mark_all_as_read", &params)
+    super::post("/user/mark_all_as_read", &())
 }

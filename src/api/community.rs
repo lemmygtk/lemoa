@@ -6,12 +6,9 @@ use lemmy_api_common::{
     lemmy_db_schema::newtypes::CommunityId,
 };
 
-use crate::settings;
-
 pub fn get_community(id: CommunityId) -> std::result::Result<GetCommunityResponse, reqwest::Error> {
     let params = GetCommunity {
         id: Some(id),
-        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
@@ -25,7 +22,6 @@ pub fn follow_community(
     let params = FollowCommunity {
         community_id,
         follow,
-        auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/community/follow", &params)
 }
@@ -41,7 +37,6 @@ pub fn block_community(
     let params = BlockCommunity {
         community_id,
         block,
-        auth: settings::get_current_account().jwt.unwrap(),
     };
 
     super::post("/community/block", &params)

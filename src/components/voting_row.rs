@@ -15,8 +15,6 @@ pub struct VotingStats {
     downvotes: i64,
     score: i64,
     own_vote: Option<i16>,
-    #[allow(dead_code)]
-    id: i32,
     post_id: Option<i32>,
     comment_id: Option<i32>,
 }
@@ -28,7 +26,6 @@ impl VotingStats {
             downvotes: counts.downvotes,
             own_vote: my_vote,
             post_id: Some(counts.post_id.0),
-            id: counts.id,
             score: counts.score,
             comment_id: None,
         }
@@ -40,7 +37,6 @@ impl VotingStats {
             downvotes: counts.downvotes,
             own_vote: my_vote,
             post_id: None,
-            id: counts.id,
             score: counts.score,
             comment_id: Some(counts.comment_id.0),
         }

@@ -11,7 +11,6 @@ pub fn create_private_message(
     recipient_id: PersonId,
 ) -> std::result::Result<PrivateMessageResponse, reqwest::Error> {
     let params = CreatePrivateMessage {
-        auth: crate::settings::get_current_account().jwt.unwrap(),
         recipient_id,
         content,
     };
@@ -23,7 +22,6 @@ pub fn edit_private_message(
     private_message_id: PrivateMessageId,
 ) -> std::result::Result<PrivateMessageResponse, reqwest::Error> {
     let params = EditPrivateMessage {
-        auth: crate::settings::get_current_account().jwt.unwrap(),
         private_message_id,
         content,
     };
@@ -37,7 +35,6 @@ pub fn list_private_messages(
     let params = GetPrivateMessages {
         unread_only: Some(unread_only),
         page: Some(page),
-        auth: crate::settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::get("/private_message/list", &params)

@@ -5,7 +5,6 @@ use lemmy_api_common::{
 };
 
 use super::search;
-use crate::settings;
 
 pub fn fetch_communities(
     page: i64,
@@ -17,7 +16,6 @@ pub fn fetch_communities(
             type_: listing_type,
             sort: Some(SortType::TopMonth),
             page: Some(page),
-            auth: settings::get_current_account().jwt,
             ..Default::default()
         };
 

@@ -4,8 +4,6 @@ use lemmy_api_common::{
     post::{GetPosts, GetPostsResponse},
 };
 
-use crate::settings;
-
 pub fn list_posts(
     page: i64,
     community_name: Option<String>,
@@ -17,7 +15,6 @@ pub fn list_posts(
         type_: listing_type,
         sort: sort_type,
         community_name,
-        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 

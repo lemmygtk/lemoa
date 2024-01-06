@@ -1,4 +1,3 @@
-use crate::settings;
 use itertools::Itertools;
 use lemmy_api_common::{
     comment::{GetComments, GetCommentsResponse},
@@ -18,7 +17,6 @@ pub fn get_post(id: PostId) -> Result<GetPostResponse, reqwest::Error> {
     let params = GetPost {
         id: Some(id),
         comment_id: None,
-        auth: settings::get_current_account().jwt,
     };
 
     super::get("/post", &params)
@@ -30,7 +28,6 @@ pub fn get_comments(post_id: PostId) -> Result<Vec<CommentView>, reqwest::Error>
         sort: Some(CommentSortType::Hot),
         type_: Some(ListingType::All),
         max_depth: Some(8),
-        auth: settings::get_current_account().jwt,
         ..Default::default()
     };
 
@@ -70,7 +67,6 @@ pub fn create_post(
         body: Some(body),
         url,
         community_id: CommunityId(community_id),
-        auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::post("/post", &params)
@@ -87,7 +83,6 @@ pub fn edit_post(
         body: Some(body),
         url,
         post_id: PostId(post_id),
-        auth: settings::get_current_account().jwt.unwrap(),
         ..Default::default()
     };
     super::put("/post", &params)
@@ -95,11 +90,7 @@ pub fn edit_post(
 
 // for score, use 1 to upvote, -1 to vote down and 0 to reset the user's voting
 pub fn like_post(post_id: PostId, score: i16) -> Result<PostResponse, reqwest::Error> {
-    let params = CreatePostLike {
-        post_id,
-        score,
-        auth: settings::get_current_account().jwt.unwrap(),
-    };
+    let params = CreatePostLike { post_id, score };
     super::post("/post/like", &params)
 }
 
@@ -107,34 +98,25 @@ pub fn delete_post(post_id: PostId) -> Result<PostResponse, reqwest::Error> {
     let params = DeletePost {
         post_id,
         deleted: true,
-        auth: settings::get_current_account().jwt.unwrap(),
     };
     super::post("/post/delete", &params)
 }
 
 pub fn save_post(post_id: PostId, save: bool) -> Result<PostResponse, reqwest::Error> {
-    let params = SavePost {
-        auth: settings::get_current_account().jwt.unwrap(),
-        post_id,
-        save,
-    };
+    let params = SavePost { post_id, save };
     super::put("/post/save", &params)
 }
 
 pub fn report_post(post_id: PostId, reason: String) -> Result<PostReportResponse, reqwest::Error> {
-    let params = CreatePostReport {
-        post_id,
-        reason,
-        auth: settings::get_current_account().jwt.unwrap(),
-    };
+    let params = CreatePostReport { post_id, reason };
     super::post("/post/report", &params)
 }
 
 pub fn mark_post_as_read(post_id: PostId, read: bool) -> Result<PostResponse, reqwest::Error> {
     let params = MarkPostAsRead {
-        post_id,
+        post_id: Some(post_id),
         read,
-        auth: settings::get_current_account().jwt.unwrap(),
+        ..Default::default()
     };
     super::post("/post/mark_as_read", &params)
 }

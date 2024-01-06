@@ -102,6 +102,7 @@ impl SimpleComponent for LoginPage {
                                 let mut account = settings::get_current_account();
                                 account.jwt = Some(token);
                                 settings::update_current_account(account.clone());
+
                                 if let Ok(site) = api::site::fetch_site() {
                                     let user = site.my_user.unwrap().local_user_view.person;
                                     account.name = user.name;

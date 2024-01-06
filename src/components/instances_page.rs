@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use lemmy_api_common::lemmy_db_schema::source::instance::Instance;
+use lemmy_api_common::site::InstanceWithFederationState;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use crate::{api, settings};
@@ -14,7 +14,7 @@ pub struct InstancesPage {
 #[derive(Debug)]
 pub enum InstancesPageInput {
     FetchInstances,
-    DoneFetchInstances(Vec<Instance>),
+    DoneFetchInstances(Vec<InstanceWithFederationState>),
     SetInstance(String),
 }
 
@@ -133,7 +133,7 @@ impl SimpleComponent for InstancesPage {
             InstancesPageInput::DoneFetchInstances(instances) => {
                 self.instances.guard().clear();
                 for instance in instances {
-                    self.instances.guard().push_back(instance);
+                    self.instances.guard().push_back(instance.instance);
                 }
             }
             InstancesPageInput::SetInstance(instance_url) => {
