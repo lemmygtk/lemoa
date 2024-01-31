@@ -1,5 +1,5 @@
 #bookworm refers to the debian version
-FROM voidlinux/voidlinux
+FROM ghcr.io/void-linux/void-glibc:latest
 
 RUN xbps-install -Syu xbps
 RUN xbps-install -Syu &&  \
