@@ -1,3 +1,5 @@
+## This project is no longer maintained. If you're interested in taking over maintainership, please feel free to contact @Bnyro.
+
 # Lemoa
 
 Native Gtk client for Lemmy (beta)
